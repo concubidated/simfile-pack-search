@@ -1,3 +1,4 @@
+"""Data Import script takes song and chart data and imports to the database"""
 import json
 from api.models import Song, Chart
 
@@ -7,7 +8,6 @@ def save_song_chart_data(pack, data):
     saved_charts = 0
 
     for parsed in data:
-        
         # Get or create the Song entry
         song, created = Song.objects.get_or_create(
             pack=pack,
@@ -15,9 +15,8 @@ def save_song_chart_data(pack, data):
             artist=parsed.artist,
             banner=parsed.banner,
             defaults={"songlength": parsed.songlength, "banner": parsed.banner, "bpms": parsed.bpms}
-
         )
-            
+
         if created:
             saved_songs += 1  # Track new songs added
 

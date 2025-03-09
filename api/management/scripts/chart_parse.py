@@ -1,11 +1,10 @@
-import json
+"""Chart Parse encodes the notedata into songs and chart objects"""
 import re
-import sqlite3
-import lz4.block
-import sys
 
 class Chart:
-    def __init__(self, charttype, difficulty, meter, lastsecondhint, npspeak, npsgraph, chartkey, taps):
+    """Chart is the notedata"""
+    def __init__(self, charttype, difficulty, meter, lastsecondhint,
+                 npspeak, npsgraph, chartkey, taps):
         self.charttype = charttype
         self.difficulty = difficulty
         self.meter = meter
@@ -22,6 +21,7 @@ class Chart:
 
 
 class Song:
+    """Song is the song, contains metadata and charts"""
     def __init__(self, title, artist, banner, bpms, filename, musiclength):
         self.title = title
         self.artist = artist
@@ -40,8 +40,8 @@ class Song:
                 f"banner={self.banner}, bpms={self.bpms}, charts={self.charts})")
 
 
-# Convert Song and Chart objects to JSON serializable format
 def song_to_dict(song):
+    """converts Song objects to JSON serializable format"""
     return {
         "title": song.title,
         "artist": song.artist,
@@ -53,6 +53,7 @@ def song_to_dict(song):
     }
 
 def chart_to_dict(chart):
+    """converts Chart objects to JSON serializable format"""
     return {
         "charttype": chart.charttype,
         "difficulty": chart.difficulty,
@@ -65,6 +66,7 @@ def chart_to_dict(chart):
     }
 
 def parse_taps(taps):
+    """Parases the taps string from the notedata."""
     data = taps.replace("#TAPS:", "").strip(";")
     items = data.split(",")
     parsed_data = {items[i]: int(items[i + 1]) for i in range(0, len(items), 2)}
@@ -119,15 +121,17 @@ def parse_ssc_data(data):
                 if match:
                     value = match.group(1).strip()
                     if not song:
-                        song = Song(title="", artist="", filename="", musiclength=0.0, banner="", bpms="")
+                        song = Song(title="", artist="", filename="",
+                                    musiclength=0.0, banner="", bpms="")
                     setattr(song, key, value)
 
         # Detect start of a new chart
-        if line == "#NOTEDATA:;" or line == "#NOTES:;":
+        if line in ("#NOTEDATA;:", "#NOTES:;"):
             if current_chart:  # Save previous chart
                 charts.append(current_chart)
             parsing_chart = True
-            current_chart = Chart(charttype="", difficulty="", meter=0, lastsecondhint=0.0, npspeak=0.0, npsgraph=[], chartkey="", taps="")
+            current_chart = Chart(charttype="", difficulty="", meter=0, lastsecondhint=0.0,
+                                  npspeak=0.0, npsgraph=[], chartkey="", taps="")
 
         # Parse chart-specific data
         elif parsing_chart:
@@ -137,10 +141,10 @@ def parse_ssc_data(data):
                     value = match.group(1).strip()
                     if key == "meter":
                         value = int(value)  # Convert to integer
-                    elif key == "lastsecondhint" or key == "npspeak" or key == "songlength":
+                    elif key in ("lastsecondhint", "npspeak", "songlength"):
                         value = float(value)  # Convert to float
                     elif key == "npsgraph":
-                        value = [float(x) for x in value.split(",") if x]  # Convert to list of floats
+                        value = [float(x) for x in value.split(",") if x]
                     elif key == "taps":
                         value = parse_taps(value)
                     setattr(current_chart, key, value)

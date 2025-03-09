@@ -1,16 +1,18 @@
+"""test function for parsing song.db"""
 from django.core.management.base import BaseCommand
 import lz4.block
 from api.management.scripts import sqlite_query, data_import, chart_parse
 
 
 def lz4_decompress(blob: bytes, original_size: int) -> bytes:
-    # Decompress the LZ4 data using block decompression
+    """decompress the LZ4 data using block decompression"""
     decompressed_data = lz4.block.decompress(blob, uncompressed_size=original_size)
     return decompressed_data
 
 class Command(BaseCommand):
+    """django admin custom command for parsing song.db"""
     help = "Imports songs and their related chart data from SQLite into Django"
-  
+
     def add_arguments(self, parser):
         parser.add_argument('songdb', type=str, help='Path to song.db')
 
@@ -24,6 +26,7 @@ class Command(BaseCommand):
             data = lz4_decompress(song[0], song[1])
             parsed.append(chart_parse.parse_ssc_data(data))
 
-        saved_songs, saved_charts = data_import.save_song_chart_data(parsed)
+        saved_songs, saved_charts = data_import.save_song_chart_data("Test Pack", parsed)
 
-        self.stdout.write(f"Import complete! ✅ {saved_songs} new songs, {saved_charts} new charts saved.")
+        self.stdout.write(
+            f"Import complete! ✅ {saved_songs} new songs, {saved_charts} new charts saved.")
