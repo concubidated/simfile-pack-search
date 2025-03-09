@@ -39,7 +39,7 @@ class PackMinVersion(models.TextChoices):
 
 class Pack(models.Model):
     name = models.CharField(max_length=255, unique=True)
-    size = models.IntegerField()
+    size = models.BigIntegerField()
     scanned = models.BooleanField()
     sha1sum = models.CharField(max_length=40)
     banner = models.CharField(max_length=64, blank=True)

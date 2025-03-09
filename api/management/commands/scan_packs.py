@@ -13,6 +13,23 @@ import hashlib
 from pathlib import Path
 import shutil
 import glob
+import time
+
+
+def convert_seconds(seconds):
+    seconds = round(seconds)  # Round to the nearest second
+    hours, remainder = divmod(seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+
+    parts = []
+    if hours:
+        parts.append(f"{hours}h")
+    if minutes:
+        parts.append(f"{minutes}m")
+    if secs:
+        parts.append(f"{secs}s")
+
+    return " ".join(parts)
 
 def unzip(file, path):
     with zipfile.ZipFile(file, 'r') as zip_ref:
@@ -48,6 +65,8 @@ class Command(BaseCommand):
         parser.add_argument('packdir', type=str, help='Path to pack directory')
 
     def handle(self, *args, **options):
+        start_time = time.time()  # Start timer
+
         self.stdout.write("Parsing new Packs... 📥")
         packdir = options['packdir']
 
@@ -56,16 +75,19 @@ class Command(BaseCommand):
         for file in os.listdir(packdir):
             if file.endswith(".zip"):
                 packlist.append(os.path.join(packdir, file))
-           
+
         # debug var for testing, rescans in the future will just be setting
-        # the scanned boolean to false in the db        
+        # the scanned boolean to false in the db
         rescan = True
 
         # temp path to use for generating the outfox cache
-        outfox_song_path = "bin/outfox/Songs" 
-        shutil.rmtree(outfox_song_path)  
-        os.makedirs(outfox_song_path)
-         
+        working_path = os.getenv('OUTFOX_WORKING_PATH', './working')
+        outfox_song_path = os.path.join(working_path, 'Songs')
+        outfox_cache_path = os.path.join(working_path, 'Cache')
+
+        shutil.rmtree(outfox_song_path, ignore_errors=True)
+        os.makedirs(outfox_song_path, exist_ok=True)
+
         for pack_path in packlist:
             filename = pack_path.split('/')[-1]
             name, extension = os.path.splitext(filename)
@@ -80,7 +102,7 @@ class Command(BaseCommand):
                 #if db_pack.scanned == 1:
                 #    print(f"Skipping {name} already exists")
                 #    continue
-                
+
                 ## temp method for now
                 if not rescan:
                     print(f"Skipping {name} already exists")
@@ -138,9 +160,6 @@ class Command(BaseCommand):
              )        
 
             # next we will run outfox --cache via docker
-
-            outfox_cache_path = "./bin/outfox/Cache" 
-            outfox_song_path = "./bin/outfox/Songs"
             docker_path = "registry.digitalocean.com/outfox-containers/cache-builder"
             
             # delete song.db from cache
@@ -149,11 +168,12 @@ class Command(BaseCommand):
             try:
                 rc = subprocess.run(["docker",
                                         "run",
+                                        #"--user", "1000:1000",
                                         "-v", f"{outfox_cache_path}:/outfox/Cache",
                                         "-v", f"{outfox_song_path}:/outfox/Songs",
                                         docker_path], 
                                         stdout=subprocess.DEVNULL, 
-                                        stderr=subprocess.DEVNULL
+                                        #stderr=subprocess.DEVNULL
                                     ).returncode
             except subprocess.CalledProcessError as e:
                 raise SystemExit(f"Error: {e.stderr}")
@@ -171,7 +191,7 @@ class Command(BaseCommand):
                 
                 # lets store the song banner
                 last_song = songs[-1]
-                song_folder = 'bin/outfox' + os.path.dirname(last_song.filename)
+                song_folder = working_path + os.path.dirname(last_song.filename)
                 song_banner = None
                 if last_song.banner:
                     song_banner = song_folder + "/" + last_song.banner
@@ -202,24 +222,31 @@ class Command(BaseCommand):
 
             # lets grab all the chart types and game types from the charts and
             # save them in the pack table, might make future queries much simpler.
-            charttype = []
-            styletype = []
+            charttype = set()
+            styletype = set()
             for chart in charts_grouped:
-                charttype.append(chart['charttype'])
-                styletype.append(chart['charttype'].split('-')[0])
+                charttype.add(chart['charttype'])
+                styletype.add(chart['charttype'].split('-')[0])
             
-            pack.types = styletype
-            pack.style = charttype
+            pack.types = list(styletype)
+            pack.style = list(charttype)
             pack.scanned = 1
             pack.save()
-     
+
+            # remove the pack from the working directory before moving on to the next one
+            shutil.rmtree(fullpath)
+
+            # move zip file to data folder
+            shutil.move(pack_path, f"/data/packs/{filename}")
+
+        end_time = time.time()  # End timer
+        elapsed_time = end_time - start_time
+        print(f"Scanning complete: {len(packlist)} packs scanned in {convert_seconds(elapsed_time)}")
+
 
         # todo: think about if we wanna store the entire notedata as well
         # it could have a constraint to the charts table and just have the raw data
         # we could then have a chart visualizer on the site too
-
-        # after pack has been scanned, lets move the pack.zip into the packs folder and
-        # we can move onto the next one.
 
         # after all are complete we can run s3 sync on the packs folder and any changes
         # will be syned, that include new packs and changed packs.
