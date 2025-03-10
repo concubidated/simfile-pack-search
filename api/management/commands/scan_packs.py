@@ -3,6 +3,7 @@ scan packs will iterated over a list of packs, unzip,
 and parse the songs/charts into the database
 """
 import os
+import re
 import time
 import glob
 import shutil
@@ -56,11 +57,26 @@ def sha1sum(file):
 def find_image(path):
     """Scan a folder and returns the first found image"""
     bn_types = {".png", ".jpeg", ".jpg", ".gif", ".bmp"}
+    ignore_pattern = re.compile(r"\b(bg|background)\b", re.IGNORECASE)  # Case-insensitive match
+    prefer_pattern = re.compile(r"\b(bn|banner)\b", re.IGNORECASE)
+
+    best_match = None
+
     for ext in bn_types:
-        files = glob.glob(os.path.join(path, f"*{ext}"))
-        if files:
-            return files[0]
-    return None
+        files = glob.glob(os.path.join(path, f"*{ext}"))  # Get all images with the extension
+
+        valid_files = [f for f in files if not ignore_pattern.search(os.path.basename(f))]
+
+        # Check for a preferred file
+        for file in valid_files:
+            if prefer_pattern.search(os.path.basename(file)):
+                return file
+
+        # If no preferred image, store the first valid one
+        if valid_files and best_match is None:
+            best_match = valid_files[0]
+
+    return best_match
 
 def lz4_decompress(blob: bytes, original_size: int) -> bytes:
     """Decompress the LZ4 data using block decompression"""
@@ -138,8 +154,8 @@ class Command(BaseCommand):
                 file_ext = os.path.splitext(banner)[1]  # Get the extension (e.g., .txt, .png)
                 file_hash = hashlib.sha1(banner.encode()).hexdigest()
                 new_banner = f"{file_hash}{file_ext}"
-                destination_path = os.path.join('static/images/packs/', new_banner)
-                os.makedirs('static/images/packs/', exist_ok=True)
+                destination_path = os.path.join('media/images/packs/', new_banner)
+                os.makedirs('media/images/packs/', exist_ok=True)
                 shutil.move(banner, destination_path)
 
             # Is there a folder called 'Additional/Noteskins/Courses ?'
@@ -201,19 +217,24 @@ class Command(BaseCommand):
                 banner_ext = None
                 if last_song.banner:
                     song_banner = song_folder + "/" + last_song.banner
-                    banner_ext = os.path.splitext(last_song.banner)[1]
-                    banner_hash = hashlib.sha1(song_banner.encode()).hexdigest()
-                else:
+                    # does file actually exist?
+                    if os.path.exists(song_banner):
+                        banner_ext = os.path.splitext(last_song.banner)[1]
+                        banner_hash = hashlib.sha1(song_banner.encode()).hexdigest()
+                    else:
+                        song_banner = None
+                        last_song.banner = None
+                if not song_banner:
                     song_banner = find_image(song_folder)
                     if song_banner:
                         banner_ext = os.path.splitext(song_banner)[1]
-                        banner_hash = hashlib.sha1(last_song.banner.encode()).hexdigest()
+                        banner_hash = hashlib.sha1(song_banner.encode()).hexdigest()
 
                 # if an image file was found, lets save it
                 if song_banner:
                     new_song_banner = f"{banner_hash}{banner_ext}"
-                    destination_path = os.path.join('static/images/songs/', new_song_banner)
-                    os.makedirs('static/images/songs/', exist_ok=True)
+                    destination_path = os.path.join('media/images/songs/', new_song_banner)
+                    os.makedirs('media/images/songs/', exist_ok=True)
                     shutil.move(song_banner, destination_path)
                     last_song.banner = new_song_banner
 
