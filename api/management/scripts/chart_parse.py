@@ -126,7 +126,7 @@ def parse_ssc_data(data):
                     setattr(song, key, value)
 
         # Detect start of a new chart
-        if line in ("#NOTEDATA;:", "#NOTES:;"):
+        if line in ("#NOTEDATA:;", "#NOTES:;"):
             if current_chart:  # Save previous chart
                 charts.append(current_chart)
             parsing_chart = True
