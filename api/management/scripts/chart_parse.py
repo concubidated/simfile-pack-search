@@ -128,7 +128,8 @@ def parse_ssc_data(data):
         # Detect start of a new chart
         if line in ("#NOTEDATA:;", "#NOTES:;"):
             if current_chart:  # Save previous chart
-                charts.append(current_chart)
+                if "lights" not in current_chart.charttype.lower():
+                    charts.append(current_chart)
             parsing_chart = True
             current_chart = Chart(charttype="", difficulty="", meter=0, lastsecondhint=0.0,
                                   npspeak=0.0, npsgraph=[], chartkey="", taps="")
@@ -152,7 +153,7 @@ def parse_ssc_data(data):
     # Save the last chart
     if current_chart:
         # lets not save light charts lol
-        if 'lights' not in current_chart.charttype:
+        if "lights" not in current_chart.charttype.lower():
             charts.append(current_chart)
 
     # Attach charts to song
