@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart List</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        .chart-container { margin-top: 10px; }
+        .chart { padding: 10px; border: 1px solid #ccc; margin-bottom: 10px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+	<h1>Available Charts for {{ song.title }}</h1>
+	<h3>Pack: {{ song.pack.name }}</h3>
+	<img src="/media/images/packs/{{ song.pack.banner }}"><br>
+	{% if song.banner %}<img src="/media/images/songs/{{ song.banner }}">{% endif %}
+
+    <div class="chart-container">
+        {% if charts %}
+            {% for chart in charts %}
+                <div class="chart">
+                    <h2>{{ chart.difficulty }}</h2>
+                    <p><strong>Meter:</strong> {{ chart.meter }}</p>
+                    <p><strong>Type:</strong> {{ chart.charttype }}</p>
+		    <p><pre>{{ chart.taps }}</pre></p>
+		    <p><strong>Peak NPS:</strong> {{ chart.npspeak | floatformat:2 }}</p>
+		    <canvas id="chart-{{ chart.id }}" style="display: block; box-sizing: border-box; height: 250px; width: 800px;"></canvas>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No Charts available.</p>
+        {% endif %}
+    </div>
+
+</body>
+</html>
+<script>
+{% for chart in charts %}
+  
+const ctx{{ chart.id }} = document.getElementById('chart-{{ chart.id }}');
+createChart(ctx{{ chart.id }}, {{ chart.npsgraph }});
+
+{% endfor  %}
+function createChart(ctx, data) {
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map((_, index) => index),
+            datasets: [{
+                data: data,
+                borderColor: 'blue',
+                borderWidth: 0,
+                fill: true,
+                tension: 0.4 // Interpolation mode for smooth curves
+            }]
+        },
+        options: {
+	    elements: {
+		    point: {
+			    radius: 0,
+		    }
+	    },
+            responsive: false,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: false // Hides x-axis since labels aren't needed
+                },
+                y: {
+                    display: true, // Hides y-axis for simplicity
+		    //suggestedMax: 15,
+	    	}
+            },
+            plugins: {
+                legend: {
+                    display: false // No legend for a minimal look
+                }
+            }
+        }
+    });
+}
+</script>

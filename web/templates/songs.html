@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song List</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        .song-container { margin-top: 10px; }
+        .song { padding: 10px; border: 1px solid #ccc; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>Available Songs</h1>
+
+    <div class="song-container">
+        {% if songs %}
+            {% for song in songs %}
+                <div class="song">
+			<h2><a href="/song/{{ song.id }}">{{ song.title }}</a></h2>
+                    <p><strong>Artist:</strong> {{ song.artist }}</p>
+                    <p><strong>Pack:</strong> {{ song.pack.name }}</p>
+		    <p><img src="/media/images/{% if song.banner %}songs/{{ song.banner }}{% else %}packs/{{ song.pack.banner }}{% endif %}"></p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No songs available.</p>
+        {% endif %}
+    </div>
+
+</body>
+</html>
+

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pack List</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        .pack-container { margin-top: 10px; }
+        .pack { padding: 10px; border: 1px solid #ccc; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>Available Packs</h1>
+
+    <div class="pack-container">
+        {% if packs %}
+            {% for pack in packs %}
+                <div class="pack">
+			<h3><a href="{{ pack.id }}">{{ pack.name }}</a></h3>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No packs available.</p>
+        {% endif %}
+    </div>
+
+</body>
+</html>
+
