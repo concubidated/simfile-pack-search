@@ -57,14 +57,13 @@ def sha1sum(file):
 def find_image(path):
     """Scan a folder and returns the first found image"""
     bn_types = {".png", ".jpeg", ".jpg", ".gif", ".bmp"}
-    ignore_pattern = re.compile(r"\b(bg|background)\b", re.IGNORECASE)  # Case-insensitive match
+    ignore_pattern = re.compile(r"\b(cdtitle|bg|background)\b", re.IGNORECASE)
     prefer_pattern = re.compile(r"\b(bn|banner)\b", re.IGNORECASE)
 
     best_match = None
 
     for ext in bn_types:
-        files = glob.glob(os.path.join(path, f"*{ext}"))  # Get all images with the extension
-
+        files = [os.path.join(path, f) for f in os.listdir(path) if f.lower().endswith(ext)]
         valid_files = [f for f in files if not ignore_pattern.search(os.path.basename(f))]
 
         # Check for a preferred file
@@ -150,7 +149,7 @@ class Command(BaseCommand):
             banner = find_image(fullpath)
             new_banner = ""
             if banner:
-                # lets store the image in static/images/packs and hash it
+                # lets store the image in media/images/packs and hash it
                 file_ext = os.path.splitext(banner)[1]  # Get the extension (e.g., .txt, .png)
                 file_hash = hashlib.sha1(banner.encode()).hexdigest()
                 new_banner = f"{file_hash}{file_ext}"
