@@ -1,5 +1,6 @@
 """Chart Parse encodes the notedata into songs and chart objects"""
 import re
+import chardet
 
 class Chart:
     """Chart is the notedata"""
@@ -76,7 +77,8 @@ def parse_ssc_data(data):
     """Parses decompressed SSC data into Song and Chart objects."""
     # Convert bytes to string if necessary
     if isinstance(data, bytes):
-        data = data.decode('utf-8')
+        result = chardet.detect(data)
+        data = data.decode(result['encoding'], errors='replace')
 
     # Split data into lines
     lines = data.splitlines()
