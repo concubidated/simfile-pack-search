@@ -18,8 +18,8 @@ class Chart:
 
     def __repr__(self):
         return (f"Chart(type={self.charttype}, difficulty={self.difficulty}, meter={self.meter}, "
-                f"credit={self.credit}, lastsecondhint={self.lastsecondhint}, npspeak={self.npspeak}, "
-                f"chartkey={self.chartkey}, taps={self.taps})")
+                f"credit={self.credit}, lastsecondhint={self.lastsecondhint}, "
+                f"npspeak={self.npspeak}, chartkey={self.chartkey}, taps={self.taps})")
 
 
 class Song:
@@ -40,8 +40,9 @@ class Song:
         self.charts.append(chart)
 
     def __repr__(self):
-        return (f"Song(title={self.title}, artist={self.artist}, credit={self.credit}, songlength={self.songlength}, "
-                f"banner={self.banner}, bpms={self.bpms}, charts={self.charts})")
+        return (f"Song(title={self.title}, artist={self.artist}, credit={self.credit}, "
+                f"songlength={self.songlength}, banner={self.banner}, bpms={self.bpms}, "
+                f"charts={self.charts})")
 
 
 def song_to_dict(song):
@@ -132,8 +133,8 @@ def parse_ssc_data(data):
                 if match:
                     value = match.group(1).strip()
                     if not song:
-                        song = Song(title="", artist="", subtitle="", credit="", filename="",
-                                    musiclength=0.0, banner="", bpms="")
+                        song = Song(title="", artist="", subtitle="", credit="",
+                                    filename="", musiclength=0.0, banner="", bpms="")
                     setattr(song, key, value)
 
         # Detect start of a new chart
@@ -142,8 +143,9 @@ def parse_ssc_data(data):
                 if "lights" not in current_chart.charttype.lower():
                     charts.append(current_chart)
             parsing_chart = True
-            current_chart = Chart(charttype="", difficulty="", meter=0, credit="", lastsecondhint=0.0,
-                                  npspeak=0.0, npsgraph=[], chartkey="", taps="")
+            current_chart = Chart(charttype="", difficulty="", meter=0,
+                                  credit="",lastsecondhint=0.0, npspeak=0.0,
+                                  npsgraph=[], chartkey="", taps="")
 
         # Parse chart-specific data
         elif parsing_chart:

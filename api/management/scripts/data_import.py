@@ -21,10 +21,12 @@ def save_song_chart_data(pack, data):
                 subtitle=parsed.subtitle[:255],
                 credit=parsed.credit,
                 banner=parsed.banner,
-                defaults={"songlength": parsed.songlength, "banner": parsed.banner, "bpms": parsed.bpms}
+                defaults={"songlength": parsed.songlength,
+                          "banner": parsed.banner,
+                          "bpms": parsed.bpms}
             )
-        except:
-            print("Error: Failed to save song", parsed.title)
+        except Exception as e:
+            print("Error: Failed to save song", parsed.title, e)
 
         if created:
             saved_songs += 1  # Track new songs added

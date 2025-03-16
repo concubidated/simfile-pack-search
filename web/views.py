@@ -19,6 +19,7 @@ def pack_list(request):
     return render(request, "packs.html", {"packs": packs})
 
 def pack(request, packid):
+    """list all the songs in a pack"""
     charts_qs = Chart.objects.only("meter", "difficulty", "charttype")
 
     songs = (
@@ -35,20 +36,23 @@ def pack(request, packid):
         .order_by("title")
         )
 
-    pack = Pack.objects.filter(id=packid).annotate(song_count=Count('songs')).first()
-    return render(request, "pack.html", {"pack": pack, "songs": songs})
+    parent_pack = Pack.objects.filter(id=packid).annotate(song_count=Count('songs')).first()
+    return render(request, "pack.html", {"pack": parent_pack, "songs": songs})
 
-def song_list(request, id):
-    songs = Song.objects.filter(pack=id).order_by("title")
+def song_list(request, packid):
+    """list all the songs in a pack"""
+    songs = Song.objects.filter(pack=packid).order_by("title")
     return render(request, "songs.html", {"songs": songs})
 
 def chart_list(request, songid):
+    """list all the charts for a song"""
     charts = Chart.objects.filter(song=songid).order_by("meter")
     song = Song.objects.get(id=songid)
     return render(request, "charts.html", {"charts": charts, "song": song})
 
 def main(request):
-    packs = list(Pack.objects.annotate(credits_list=Value(', '.join(Song.objects.filter(pack=F('id')).values_list('credit', flat=True).distinct())), song_count=Count('songs')).order_by("name")) 
+    """main pack list"""
+    packs = list(Pack.objects.annotate(song_count=Count('songs')).order_by("name"))
     packs.sort(key=lambda pack: natural_sort_key(pack.name))
     return render(request, "main.html", {"packs": packs})
 

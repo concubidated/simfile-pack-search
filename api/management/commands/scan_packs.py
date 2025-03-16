@@ -166,13 +166,12 @@ class Command(BaseCommand):
             parent_dir = os.path.dirname(fullpath)
             found_extra = any(
                 d.lower() in extra_dirs and os.path.isdir(os.path.join(fullpath, d))
-                for d in os.listdir(fullpath)
-                )
-            found_extra = any(
-                d for d in os.listdir(parent_dir)
-                if d.lower() in extra_dirs and os.path.isdir(os.path.join(parent_dir, d))
-                )
-            
+                for d in os.listdir(fullpath))
+            if not found_extra:
+                found_extra = any(
+                    d for d in os.listdir(parent_dir)
+                    if d.lower() in extra_dirs and os.path.isdir(os.path.join(parent_dir, d)))
+
             # At this point we can create the Packs object
             # packname, filesized, scanned, banner, date, scanned,
             # pack.ini will have some of that too
@@ -243,16 +242,19 @@ class Command(BaseCommand):
                         reader = imageio.get_reader(song_banner)
                         fps = reader.get_meta_data()['fps']
                         width, height = reader.get_meta_data()['size']
+
+                        resize_factor = 1.0
+
                         if width > 418: #standard banner size wtf lol
                             resize_factor = 418.0/width
-                            new_width = int(width * resize_factor)
-                            new_height = int(height * resize_factor)
 
-                        with imageio.get_writer(f"{song_banner}.gif", mode='I', loop=0, fps=fps) as writer:
+                        with imageio.get_writer(
+                                f"{song_banner}.gif", mode='I', loop=0, fps=fps) as writer:
                             for frame in reader:
                                 if resize_factor:
                                     pil_frame = Image.fromarray(frame)
-                                    pil_frame = pil_frame.resize((new_width, new_height))
+                                    pil_frame = pil_frame.resize(
+                                            (int(resize_factor*width), int(resize_factor*height)))
                                     resized_frame = np.array(pil_frame)
                                     writer.append_data(resized_frame)
                                 else:
@@ -271,16 +273,16 @@ class Command(BaseCommand):
             # not have a credit defined, lets check the chart data itself
             # lets build a list of chart authors and save that to the song
             # even though in most cases this will be a single author
-            credits = set()
+            chart_credits = set()
             for song in songs:
                 song_credits = set()
                 if song.credit:
-                    credits.add(song.credit)
+                    chart_credits.add(song.credit)
                     song_credits.add(song.credit)
                     song.credit = list(song_credits)
                 else:
                     for chart in song.charts:
-                        credits.add(chart.credit)
+                        chart_credits.add(chart.credit)
                         song_credits.add(chart.credit)
                     song.credit = list(song_credits)
 
@@ -302,7 +304,7 @@ class Command(BaseCommand):
 
             pack.types = list(styletype)
             pack.style = list(charttype)
-            pack.authors = list(credits)
+            pack.authors = list(chart_credits)
             pack.scanned = 1
             pack.save()
 
