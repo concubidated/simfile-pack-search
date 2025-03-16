@@ -14,7 +14,7 @@ from pathlib import Path
 
 import humanize
 import lz4.block
-import imageio
+import imageio.v3 as iio
 from PIL import Image
 import numpy as np
 
@@ -59,7 +59,7 @@ def sha1sum(file):
 
 def find_image(path):
     """Scan a folder and returns the first found image"""
-    bn_types = {".png", ".jpeg", ".jpg", ".gif", ".bmp"}
+    bn_types = {".png", ".jpeg", ".jpg", ".gif", ".bmp", ".avi", ".mp4"}
     ignore_pattern = re.compile(r"\b(cdtitle|bg|background)\b", re.IGNORECASE)
     prefer_pattern = re.compile(r"\b(bn|banner)\b", re.IGNORECASE)
 
@@ -79,6 +79,49 @@ def find_image(path):
             best_match = valid_files[0]
 
     return best_match
+
+def convert_video_to_gif(banner_path):
+    """Use ioimage to convert a video to a gif"""
+    video = iio.imread(banner_path, plugin='pyav')
+    meta = iio.immeta(banner_path, plugin='pyav')
+    height, width = video.shape[1:3]
+    colors = 256
+    resize_factor = 1.0
+    if width > 512: #standard banner size wtf lol
+        resize_factor = 512.0/width
+    target_fps = 10
+    step = max(1, int(meta['fps']) // int(target_fps))
+    reduced_frames = video[::step]
+    # Resize frames and reduce colors
+    resized_frames = [
+        Image.fromarray(frame).resize((int(width*resize_factor), int(height*resize_factor)), Image.LANCZOS).convert('P', palette=Image.ADAPTIVE, colors=colors)
+        for frame in reduced_frames
+    ]
+
+    # Save as GIF
+    resized_frames[0].save(
+        f"{banner_path}.gif",
+        save_all=True,
+        append_images=resized_frames[1:],
+        duration=meta['duration'] // target_fps,  # Set FPS
+        loop=0,  # Infinite loop
+        optimize=True  # Optimize for size
+    )
+    optimize_gif(f"{banner_path}.gif")
+    os.rename(f"{banner_path}.gif", banner_path)
+
+def optimize_gif(banner_path):
+    """Run gifsicle to reduce the size"""
+    if not shutil.which("gifsicle"):
+        raise EnvironmentError("`gifsicle` is not installed or not found in PATH.")
+
+    try:
+        subprocess.run(
+            ["gifsicle", "--colors", "256", "-O9", banner_path, "-o", banner_path],
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Error optimizing {banner_path}: {e}")
 
 def lz4_decompress(blob: bytes, original_size: int) -> bytes:
     """Decompress the LZ4 data using block decompression"""
@@ -155,6 +198,9 @@ class Command(BaseCommand):
                 # lets store the image in media/images/packs and hash it
                 file_ext = os.path.splitext(banner)[1]  # Get the extension (e.g., .txt, .png)
                 file_hash = hashlib.sha1(banner.encode()).hexdigest()
+                if file_ext in {".avi", ".mp4"}:
+                    convert_video_to_gif(banner)
+                    file_ext = ".gif"
                 new_banner = f"{file_hash}{file_ext}"
                 destination_path = os.path.join('media/images/packs/', new_banner)
                 os.makedirs('media/images/packs/', exist_ok=True)
@@ -238,28 +284,8 @@ class Command(BaseCommand):
 
                 # if an image file was found, lets save it
                 if song_banner:
-                    if "avi" in banner_ext:
-                        reader = imageio.get_reader(song_banner)
-                        fps = reader.get_meta_data()['fps']
-                        width, height = reader.get_meta_data()['size']
-
-                        resize_factor = 1.0
-
-                        if width > 512:
-                            resize_factor = 512.0/width
-
-                        with imageio.get_writer(
-                                f"{song_banner}.gif", mode='I', loop=0, fps=fps) as writer:
-                            for frame in reader:
-                                if resize_factor:
-                                    pil_frame = Image.fromarray(frame)
-                                    pil_frame = pil_frame.resize(
-                                            (int(resize_factor*width), int(resize_factor*height)))
-                                    resized_frame = np.array(pil_frame)
-                                    writer.append_data(resized_frame)
-                                else:
-                                    writer.append_data(frame)
-                        os.rename(f"{song_banner}.gif", song_banner)
+                    if banner_ext.lower() in {".avi", ".mp4"}:
+                        convert_video_to_gif(song_banner)
                         banner_ext = ".gif"
                     new_song_banner = f"{banner_hash}{banner_ext}"
                     destination_path = os.path.join('media/images/songs/', new_song_banner)
