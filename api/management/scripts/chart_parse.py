@@ -4,11 +4,12 @@ import chardet
 
 class Chart:
     """Chart is the notedata"""
-    def __init__(self, charttype, difficulty, meter, lastsecondhint,
+    def __init__(self, charttype, difficulty, meter, credit, lastsecondhint,
                  npspeak, npsgraph, chartkey, taps):
         self.charttype = charttype
         self.difficulty = difficulty
         self.meter = meter
+        self.credit = credit
         self.lastsecondhint = lastsecondhint
         self.npspeak = npspeak
         self.npsgraph = npsgraph
@@ -17,15 +18,17 @@ class Chart:
 
     def __repr__(self):
         return (f"Chart(type={self.charttype}, difficulty={self.difficulty}, meter={self.meter}, "
-                f"lastsecondhint={self.lastsecondhint}, npspeak={self.npspeak}, "
+                f"credit={self.credit}, lastsecondhint={self.lastsecondhint}, npspeak={self.npspeak}, "
                 f"chartkey={self.chartkey}, taps={self.taps})")
 
 
 class Song:
     """Song is the song, contains metadata and charts"""
-    def __init__(self, title, artist, banner, bpms, filename, musiclength):
+    def __init__(self, title, artist, subtitle, credit, banner, bpms, filename, musiclength):
         self.title = title
         self.artist = artist
+        self.subtitle = subtitle
+        self.credit = credit
         self.banner = banner
         self.songlength = musiclength
         self.bpms = bpms
@@ -37,7 +40,7 @@ class Song:
         self.charts.append(chart)
 
     def __repr__(self):
-        return (f"Song(title={self.title}, artist={self.artist}, songlength={self.songlength}, "
+        return (f"Song(title={self.title}, artist={self.artist}, credit={self.credit}, songlength={self.songlength}, "
                 f"banner={self.banner}, bpms={self.bpms}, charts={self.charts})")
 
 
@@ -46,6 +49,8 @@ def song_to_dict(song):
     return {
         "title": song.title,
         "artist": song.artist,
+        "subtitle": song.subtitle,
+        "credit": song.credit,
         "banner": song.banner,
         "songlength": song.songlength,
         "bpms": song.bpms,
@@ -59,6 +64,7 @@ def chart_to_dict(chart):
         "charttype": chart.charttype,
         "difficulty": chart.difficulty,
         "meter": chart.meter,
+        "credit": chart.credit,
         "lastsecondhint": chart.lastsecondhint,
         "npspeak": chart.npspeak,
         "npsgraph": chart.npsgraph,
@@ -67,7 +73,7 @@ def chart_to_dict(chart):
     }
 
 def parse_taps(taps):
-    """Parases the taps string from the notedata."""
+    """Parses the taps string from the notedata."""
     data = taps.replace("#TAPS:", "").strip(";")
     items = data.split(",")
     parsed_data = {items[i]: int(items[i + 1]) for i in range(0, len(items), 2)}
@@ -91,6 +97,8 @@ def parse_ssc_data(data):
     metadata_patterns = {
         "title": re.compile(r"^#TITLE:(.*);"),
         "artist": re.compile(r"^#ARTIST:(.*);"),
+        "subtitle": re.compile(r"^#SUBTITLE:(.*);"),
+        "credit": re.compile(r"^#CREDIT:(.*);"),
         "banner": re.compile(r"^#BANNER:(.*);"),
         "bpms": re.compile(r"^#BPMS:(.*)\n"),
         "songlength": re.compile(r"#MUSICLENGTH:(.*);"),
@@ -102,6 +110,7 @@ def parse_ssc_data(data):
         "charttype": re.compile(r"^#CHARTTYPE:(.*);"),
         "difficulty": re.compile(r"^#DIFFICULTY:(.*);"),
         "meter": re.compile(r"^#METER:(.*);"),
+        "credit": re.compile(r"^#CREDIT:(.*);"),
         "lastsecondhint": re.compile(r"^#LASTSECONDHINT:(.*);"),
         "npspeak": re.compile(r"^#NPSPEAK:(.*);"),
         "npsgraph": re.compile(r"^#NPSGRAPH:(.*);"),
@@ -123,7 +132,7 @@ def parse_ssc_data(data):
                 if match:
                     value = match.group(1).strip()
                     if not song:
-                        song = Song(title="", artist="", filename="",
+                        song = Song(title="", artist="", subtitle="", credit="", filename="",
                                     musiclength=0.0, banner="", bpms="")
                     setattr(song, key, value)
 
@@ -133,7 +142,7 @@ def parse_ssc_data(data):
                 if "lights" not in current_chart.charttype.lower():
                     charts.append(current_chart)
             parsing_chart = True
-            current_chart = Chart(charttype="", difficulty="", meter=0, lastsecondhint=0.0,
+            current_chart = Chart(charttype="", difficulty="", meter=0, credit="", lastsecondhint=0.0,
                                   npspeak=0.0, npsgraph=[], chartkey="", taps="")
 
         # Parse chart-specific data

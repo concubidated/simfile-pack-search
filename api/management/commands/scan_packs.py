@@ -14,11 +14,14 @@ from pathlib import Path
 
 import humanize
 import lz4.block
+import imageio
+from PIL import Image
+import numpy as np
 
 from django.core.management.base import BaseCommand
 from django.db.models import Count
 
-from api.models import Pack, Chart
+from api.models import Pack, Song, Chart
 from api.management.scripts import sqlite_query, data_import, chart_parse
 
 def convert_seconds(seconds):
@@ -159,12 +162,17 @@ class Command(BaseCommand):
 
             # Is there a folder called 'Additional/Noteskins/Courses ?'
             # lets just have a check for additional content
-            extra_dirs = {"additional", "additional content", "noteskins", "courses"}
+            extra_dirs = {"appearance", "additional", "additional content", "noteskins", "courses"}
+            parent_dir = os.path.dirname(fullpath)
             found_extra = any(
                 d.lower() in extra_dirs and os.path.isdir(os.path.join(fullpath, d))
                 for d in os.listdir(fullpath)
-            )
-
+                )
+            found_extra = any(
+                d for d in os.listdir(parent_dir)
+                if d.lower() in extra_dirs and os.path.isdir(os.path.join(parent_dir, d))
+                )
+            
             # At this point we can create the Packs object
             # packname, filesized, scanned, banner, date, scanned,
             # pack.ini will have some of that too
@@ -231,22 +239,59 @@ class Command(BaseCommand):
 
                 # if an image file was found, lets save it
                 if song_banner:
+                    if "avi" in banner_ext:
+                        reader = imageio.get_reader(song_banner)
+                        fps = reader.get_meta_data()['fps']
+                        width, height = reader.get_meta_data()['size']
+                        if width > 418: #standard banner size wtf lol
+                            resize_factor = 418.0/width
+                            new_width = int(width * resize_factor)
+                            new_height = int(height * resize_factor)
+
+                        with imageio.get_writer(f"{song_banner}.gif", mode='I', loop=0, fps=fps) as writer:
+                            for frame in reader:
+                                if resize_factor:
+                                    pil_frame = Image.fromarray(frame)
+                                    pil_frame = pil_frame.resize((new_width, new_height))
+                                    resized_frame = np.array(pil_frame)
+                                    writer.append_data(resized_frame)
+                                else:
+                                    writer.append_data(frame)
+                        os.rename(f"{song_banner}.gif", song_banner)
+                        banner_ext = ".gif"
                     new_song_banner = f"{banner_hash}{banner_ext}"
                     destination_path = os.path.join('media/images/songs/', new_song_banner)
                     os.makedirs('media/images/songs/', exist_ok=True)
                     shutil.move(song_banner, destination_path)
                     last_song.banner = new_song_banner
 
+            # lets build a list of chart authors for the pack metadata
+
+            # songs might have multiple chart authors, so if the song does
+            # not have a credit defined, lets check the chart data itself
+            # lets build a list of chart authors and save that to the song
+            # even though in most cases this will be a single author
+            credits = set()
+            for song in songs:
+                song_credits = set()
+                if song.credit:
+                    credits.add(song.credit)
+                    song_credits.add(song.credit)
+                    song.credit = list(song_credits)
+                else:
+                    for chart in song.charts:
+                        credits.add(chart.credit)
+                        song_credits.add(chart.credit)
+                    song.credit = list(song_credits)
+
             data_import.save_song_chart_data(pack, songs)
 
-            # Group charts by charttype where pack is the given pack
             charts_grouped = (
                 Chart.objects.filter(song__pack=pack)
                 .values("charttype")  # Group by charttype
                 .annotate(count=Count("id"))  # Count charts in each group
             )
 
-            # lets grab all the chart types and game types from the charts and
             # save them in the pack table, might make future queries much simpler.
             charttype = set()
             styletype = set()
@@ -254,8 +299,10 @@ class Command(BaseCommand):
                 charttype.add(chart['charttype'])
                 styletype.add(chart['charttype'].split('-')[0])
 
+
             pack.types = list(styletype)
             pack.style = list(charttype)
+            pack.authors = list(credits)
             pack.scanned = 1
             pack.save()
 
