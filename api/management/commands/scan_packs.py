@@ -245,8 +245,8 @@ class Command(BaseCommand):
 
                         resize_factor = 1.0
 
-                        if width > 418: #standard banner size wtf lol
-                            resize_factor = 418.0/width
+                        if width > 512:
+                            resize_factor = 512.0/width
 
                         with imageio.get_writer(
                                 f"{song_banner}.gif", mode='I', loop=0, fps=fps) as writer:
