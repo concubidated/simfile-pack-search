@@ -5,9 +5,10 @@ from . import views
 
 urlpatterns = [
     path("packs/", views.pack_list),
-    path("pack/<int:id>", views.song_list),
+    path("pack/<int:packid>", views.pack),
     path("song/<int:songid>", views.chart_list),
     path("songs", views.list_all_songs),
+    path("", views.main),
     ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

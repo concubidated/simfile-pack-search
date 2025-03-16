@@ -3,7 +3,7 @@ import re
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
 from django.shortcuts import render
-from django.db.models import Prefetch, Min, Max
+from django.db.models import Prefetch, Min, Max, Count, F, Value
 
 from api.models import Pack, Song, Chart
 
@@ -18,6 +18,26 @@ def pack_list(request):
     packs.sort(key=lambda pack: natural_sort_key(pack.name))
     return render(request, "packs.html", {"packs": packs})
 
+def pack(request, packid):
+    charts_qs = Chart.objects.only("meter", "difficulty", "charttype")
+
+    songs = (
+        Song.objects.prefetch_related(
+            Prefetch("charts", queryset=charts_qs)
+        )
+        .filter(pack=packid)
+        .select_related("pack")
+        .annotate(
+            min_meter=Min("charts__meter"),
+            max_meter=Max("charts__meter")
+        )
+        .only("id", "title", "artist", "banner", "pack__name", "pack__id")
+        .order_by("title")
+        )
+
+    pack = Pack.objects.filter(id=packid).annotate(song_count=Count('songs')).first()
+    return render(request, "pack.html", {"pack": pack, "songs": songs})
+
 def song_list(request, id):
     songs = Song.objects.filter(pack=id).order_by("title")
     return render(request, "songs.html", {"songs": songs})
@@ -27,9 +47,14 @@ def chart_list(request, songid):
     song = Song.objects.get(id=songid)
     return render(request, "charts.html", {"charts": charts, "song": song})
 
+def main(request):
+    packs = list(Pack.objects.annotate(credits_list=Value(', '.join(Song.objects.filter(pack=F('id')).values_list('credit', flat=True).distinct())), song_count=Count('songs')).order_by("name")) 
+    packs.sort(key=lambda pack: natural_sort_key(pack.name))
+    return render(request, "main.html", {"packs": packs})
+
 #@cache_page(60 * 60 * 24)  # Cache the view for 1 day
 def list_all_songs(request):
-"""list all songs will query all songs and charts""" 
+    """list all songs will query all songs and charts"""
     cache_key = "all_songs"
 
     songs = cache.get(cache_key)

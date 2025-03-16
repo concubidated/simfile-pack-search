@@ -17,6 +17,7 @@ class PackSubStyle(models.TextChoices):
     MODS = 'mods'
     STAMINA = 'stamina'
     DUMP = 'dump'
+    ALLAROUND = 'all around'
 
 class PackSync(models.TextChoices):
     """PackSync is the offset of the pack"""
@@ -40,6 +41,7 @@ class Pack(models.Model):
     scanned = models.BooleanField()
     sha1sum = models.CharField(max_length=40)
     banner = models.CharField(max_length=64, blank=True)
+    authors = models.JSONField(default=list)
     types = models.JSONField(default=list)
     style = models.JSONField(default=list)
     substyle = models.CharField(max_length=32, choices=PackSubStyle.choices, blank=True, null=True)
@@ -58,13 +60,15 @@ class Pack(models.Model):
     date_scanned = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.name} - {self.style}"
+        return f"{self.name} - {self.types}"
 
 class Song(models.Model):
     """Songs are the folders that container the charts"""
     pack = models.ForeignKey(Pack, on_delete=models.CASCADE, related_name="songs") # Link to Packs
     title = models.CharField(max_length=255)
+    credit = models.JSONField(default=list)
     artist = models.CharField(max_length=255)
+    subtitle = models.CharField(max_length=255)
     filename = models.CharField(max_length=100)
     songlength = models.FloatField(default=0)
     banner = models.CharField(max_length=255, blank=True, null=True)
@@ -78,11 +82,12 @@ class Chart(models.Model):
     charttype = models.CharField(max_length=50)
     difficulty = models.CharField(max_length=50)
     meter = models.IntegerField()
+    author = models.CharField(max_length=64)
     lastsecondhint = models.FloatField()
     npspeak = models.FloatField()
-    npsgraph = models.JSONField()  # Stores the list of numbers
+    npsgraph = models.JSONField(default=list)
     chartkey = models.CharField(max_length=64, unique=True)  # Ensure uniqueness
-    taps = models.JSONField(default=dict)
+    taps = models.JSONField(default=list)
 
     def __str__(self):
         return f"{self.song.__str__()} - {self.difficulty} ({self.meter} - {self.charttype})"
