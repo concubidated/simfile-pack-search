@@ -37,7 +37,27 @@ def pack(request, packid):
         )
 
     parent_pack = Pack.objects.filter(id=packid).annotate(song_count=Count('songs')).first()
-    return render(request, "pack.html", {"pack": parent_pack, "songs": songs})
+    charts = Chart.objects.filter(song__pack=packid).values('meter').annotate(count=Count('id')).order_by('meter')
+
+    meter_dist = {}
+    chart_info = {'count': 0}
+    for chart in charts:
+        meter_dist[chart['meter']] = chart['count']
+        chart_info['count'] += chart['count']
+
+    chart_info['min_meter'] = min(meter_dist.keys())
+    chart_info['max_meter'] = max(meter_dist.keys())
+
+    print(meter_dist)
+    context = {
+        "pack": parent_pack,
+        "songs": songs,
+        "charts": charts,
+        "meter_dist": meter_dist,
+        "chart_info": chart_info,
+    }
+    
+    return render(request, "pack.html",  context)
 
 def song_list(request, packid):
     """list all the songs in a pack"""

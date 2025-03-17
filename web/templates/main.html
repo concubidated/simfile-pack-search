@@ -15,7 +15,7 @@
     {% load humanize %}
 
 </head>
-<body class="container my-4">
+<body class="container my-4 bg-dark text-light">
 
 	<h1 class="text-center mb-4"><strike>Stepmania</strike> Outfox Packs</h1>
     <div class="table-responsive">
@@ -28,41 +28,40 @@
         <label><input type="checkbox" class="filter-checkbox" value="bm"> Beatmania</label>
         <label><input type="checkbox" class="filter-checkbox" value="iidx"> IIDX</label>
     </div>
-    <table id="packTable" class="table table-striped table-hover table-bordered">
+    <table id="packTable" class="table table-striped table-hover table-bordered table-dark">
         <thead class="table-dark">
-            <tr>
-		<th class="no-sort"></th>
-                <th>Pack</th>
-                <th>Size</th>
-		<td>Song Count</th>
-		<td>Types(s)</td>
-		<td>Credit(s)</td>
-		<td>Date</td>
-		<td class="no-sort">Download</td>
-            </tr>
+        <tr>
+            <th class="no-sort"></th>
+            <th>Pack</th>
+            <th>Size</th>
+            <th>Song Count</th>
+            <th>Types(s)</th>
+            <th>Credit(s)</th>
+            <th>Date</th>
+            <th class="no-sort">Download</th>
+        </tr>
         </thead>
         <tbody>
         {% for pack in packs %}
 		<tr>
 			<td><img class="img-fluid rounded" style="max-height:100px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
-		<td class="small"><a href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></td>
-		<td data-sort="{{ pack.size }}" class="small">{{ pack.size|filesizeformat }}</td>
-		<td class="small">{{ pack.song_count }}</td>
-		<td data-sort="{{ pack.types }}" width="100px" class="small">
+            <td class="small"><a href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></td>
+            <td data-sort="{{ pack.size }}" class="small">{{ pack.size|filesizeformat }}</td>
+            <td class="small">{{ pack.song_count }}</td>
+            <td data-sort="{{ pack.types }}" width="100px" class="small">
 			{% for type in pack.types %}
-			<img alt="{{ type }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ type }} charts" class="img-fluid d-inline-block" style="max-width: 30px; filter: invert(1);" src="{% static 'images/types/'|add:type|add:'.png' %}">
+			    <img alt="{{ type }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ type }} charts" class="img-fluid d-inline-block" style="max-width: 30px; filter: invert(1);" src="{% static 'images/types/'|add:type|add:'.png' %}">
 			{% endfor %}
-		</td>
-		<td class="small">{% if pack.authors|length > 4 %}Various{% else %}{% for author in pack.authors %}{{ author }}<br>{% endfor %}{% endif %}</td>
-		<td class="small">{{ pack.date_scanned|date:"Y-m-d" }}</td>
-		<td class="text-center"><a href="/downloads/packs/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a></td>
+            </td>
+            <td class="small">{% if pack.authors|length > 4 %}Various{% else %}{% for author in pack.authors %}{{ author }}<br>{% endfor %}{% endif %}</td>
+            <td class="small">{{ pack.date_scanned|date:"Y-m-d" }}</td>
+            <td class="text-center"><a href="/downloads/packs/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a></td>
 		</tr>
-	{% empty %}
+	    {% empty %}
 		<tr>
-		<td colspan="4" class="text-center">No songs available.</td>
+		    <td colspan="7" class="text-center">No Packs available.</td>
 		</tr>
-	{% endfor %}
-
+	    {% endfor %}
         </tbody>
     </table>
 

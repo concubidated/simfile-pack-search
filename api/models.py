@@ -73,6 +73,12 @@ class Song(models.Model):
     songlength = models.FloatField(default=0)
     banner = models.CharField(max_length=255, blank=True, null=True)
     bpms = models.CharField(max_length=100, blank=True, null=True)  # Can store BPMs as a string
+
+    def song_length_formatted(self):
+        minutes = int(self.songlength // 60)
+        seconds = int(self.songlength % 60)
+        return f"{minutes}:{seconds:02d}"
+
     def __str__(self):
         return f"{self.title} - {self.artist} - {self.pack.name}"
 
@@ -86,8 +92,11 @@ class Chart(models.Model):
     lastsecondhint = models.FloatField()
     npspeak = models.FloatField()
     npsgraph = models.JSONField(default=list)
-    chartkey = models.CharField(max_length=64, unique=True)  # Ensure uniqueness
+    chartkey = models.CharField(max_length=64)
     taps = models.JSONField(default=list)
+
+    class Meta:
+        unique_together = ('chartkey', 'song')
 
     def __str__(self):
         return f"{self.song.__str__()} - {self.difficulty} ({self.meter} - {self.charttype})"

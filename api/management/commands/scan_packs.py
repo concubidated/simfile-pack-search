@@ -308,8 +308,9 @@ class Command(BaseCommand):
                     song.credit = list(song_credits)
                 else:
                     for chart in song.charts:
-                        chart_credits.add(chart.credit)
-                        song_credits.add(chart.credit)
+                        if chart.credit:
+                            chart_credits.add(chart.credit)
+                            song_credits.add(chart.credit)
                     song.credit = list(song_credits)
 
             data_import.save_song_chart_data(pack, songs)
@@ -328,9 +329,9 @@ class Command(BaseCommand):
                 styletype.add(chart['charttype'].split('-')[0])
 
 
-            pack.types = list(styletype)
-            pack.style = list(charttype)
-            pack.authors = list(chart_credits)
+            pack.types = list(styletype).sort()
+            pack.style = list(charttype).sort()
+            pack.authors = list(chart_credits).sort()
             pack.scanned = 1
             pack.save()
 
