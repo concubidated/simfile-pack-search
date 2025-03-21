@@ -20,6 +20,7 @@ import numpy as np
 
 from django.core.management.base import BaseCommand
 from django.db.models import Count
+from django.db import IntegrityError
 
 from api.models import Pack, Song, Chart
 from api.management.scripts import sqlite_query, data_import, chart_parse
@@ -178,7 +179,9 @@ class Command(BaseCommand):
                 if not rescan:
                     print(f"Skipping {name} already exists")
                     continue
-                db_pack.delete()
+
+                # rescan the pack but only delete the song/charts
+                Song.objects.filter(pack=db_pack).delete()
             except Pack.DoesNotExist:
                 pass
 
@@ -221,14 +224,19 @@ class Command(BaseCommand):
             # At this point we can create the Packs object
             # packname, filesized, scanned, banner, date, scanned,
             # pack.ini will have some of that too
-            pack, _ = Pack.objects.get_or_create(
-                name=name,
-                size=size,
-                sha1sum=pack_hash,
-                scanned=False,
-                extras=found_extra,
-                banner=new_banner,
-                )
+                    
+            try:
+                pack, _ = Pack.objects.get_or_create(
+                    name=name,
+                    size=size,
+                    sha1sum=pack_hash,
+                    scanned=False,
+                    extras=found_extra,
+                    banner=new_banner,
+                    )
+            except IntegrityError:
+                pack = Pack.objects.get(name=name)
+
 
             # next we will run outfox --cache via docker
             docker_path = "registry.digitalocean.com/outfox-containers/cache-builder"

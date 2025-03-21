@@ -92,6 +92,9 @@ def parse_ssc_data(data):
     # Convert bytes to string if necessary
     if isinstance(data, bytes):
         result = chardet.detect(data)
+        # ugh, annoying
+        if result['encoding'] == "Windows-1252":
+            result['encoding'] = "utf-8"
         data = data.decode(result['encoding'], errors='replace')
 
     # Split data into lines
