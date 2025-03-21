@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Song List</title>
+    <title>Pack List</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
@@ -19,15 +19,37 @@
 
 	<h1 class="text-center mb-4"><strike>Stepmania</strike> Outfox Packs</h1>
     <div class="table-responsive">
-
-    <div id="filterCheckboxes">
-        <label><input type="checkbox" class="filter-checkbox" value="dance"> Dance</label>
-        <label><input type="checkbox" class="filter-checkbox" value="pump"> Pump</label>
-	<label><input type="checkbox" class="filter-checkbox" value="smx"> SMX</label>
-	<label><input type="checkbox" class="filter-checkbox" value="techno"> Techno</label>
-        <label><input type="checkbox" class="filter-checkbox" value="bm"> Beatmania</label>
-        <label><input type="checkbox" class="filter-checkbox" value="iidx"> IIDX</label>
+        <div class="col-md-12" id="searchBox">
+        <form class="" action="/search" method="POST">
+            {% csrf_token %}
+            <div class="input-group">
+                <select name="type" class="btn btn-primary show-tick selectpicker" title="Type">
+                    <option value="title">Title</option>
+                    <option value="artist">Artist</option>
+                    <option value="credit">Chart Author</option>
+                </select>
+                <input type="text" id="search" name="search" class="form-control" placeholder="">
+                <button type="submit" name="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+        </div>
+        <div class="col-md-12">
+            <!-- Button to toggle the collapse -->
+            <button class="btn btn-primary mt-3 mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#filterCheckboxes" aria-expanded="false" aria-controls="filterCheckboxes">
+                Filters
+            </button>
+            <div class="collapse mb-3" id="filterCheckboxes">
+                <div>
+                    <label>Filter by Type:</label>
+                    <div><label><input type="checkbox" class="filter-checkbox" value="dance"> Dance</label></div>
+                    <div><label><input type="checkbox" class="filter-checkbox" value="pump"> Pump</label></div>
+                    <div><label><input type="checkbox" class="filter-checkbox" value="smx"> SMX</label></div>
+                    <div><label><input type="checkbox" class="filter-checkbox" value="techno"> Techno</label></div>
+                </div>
+            </div>
+        </div> 
     </div>
+
     <table id="packTable" class="table table-striped table-hover table-bordered table-dark">
         <thead class="table-dark">
         <tr>
@@ -39,24 +61,26 @@
             <th>Credit(s)</th>
             <th>Date</th>
             <th class="no-sort">Download</th>
+            <th>Styles</th>
         </tr>
         </thead>
         <tbody>
         {% for pack in packs %}
 		<tr>
-			<td><img class="img-fluid rounded" style="max-height:100px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
+			<td><img class="img-fluid rounded" style="max-width:200px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
             <td class="small"><a href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></td>
             <td data-sort="{{ pack.size }}" class="small">{{ pack.size|filesizeformat }}</td>
             <td class="small">{{ pack.song_count }}</td>
             <td data-sort="{{ pack.types }}" width="100px" class="small">
 			{% for type in pack.types %}
-			    <img alt="{{ type }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ type }} charts" class="img-fluid d-inline-block" style="max-width: 30px; filter: invert(1);" src="{% static 'images/types/'|add:type|add:'.png' %}">
+			    <img alt="{{ type }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ type }} charts" class="img-fluid d-inline-block" style="max-width: 30px; filter: invert(0);" src="{% static 'images/types/'|add:type|add:'.png' %}">
 			{% endfor %}
             </td>
             <td class="small">{% if pack.authors|length > 4 %}Various{% else %}{% for author in pack.authors %}{{ author }}<br>{% endfor %}{% endif %}</td>
             <td class="small">{{ pack.date_scanned|date:"Y-m-d" }}</td>
             <td class="text-center"><a href="/downloads/packs/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a></td>
-		</tr>
+            <td data-sort="{{ pack.style }}"></td>
+        </tr>
 	    {% empty %}
 		<tr>
 		    <td colspan="7" class="text-center">No Packs available.</td>
@@ -74,10 +98,14 @@
             paging: true,
             searching: true,
             ordering: true,
-	    columnDefs: [{
+	        columnDefs: [{
                 orderable: false,
                 targets: "no-sort"
-            }],
+                },
+                {
+                    target: 8,
+                    visible: false
+                }],
             pageLength: 25,
             lengthMenu: [25, 50, 100, 200], // Options for rows per page
             language: {
@@ -101,12 +129,12 @@ $(document).ready(function () {
 
     // Custom filter logic for JSON data-sort field
     $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-        var jsonData = $(table.row(dataIndex).node()).find('td:eq(4)').data('sort');
+        var jsonTypeData = $(table.row(dataIndex).node()).find('td:eq(4)').data('sort');
 
         try {
-            var packTypes = JSON.parse(jsonData.replace(/'/g, '"')); // Convert to valid JSON format
+            var packTypes = JSON.parse(jsonTypeData.replace(/'/g, '"')); // Convert to valid JSON format
         } catch (e) {
-            console.error('Invalid JSON data-sort:', jsonData);
+            console.error('Invalid JSON data-sort:', jsonTypeData);
             return false; // Skip if JSON parsing fails
         }
 

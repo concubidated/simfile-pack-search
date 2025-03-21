@@ -9,6 +9,8 @@ urlpatterns = [
     path("pack/<int:packid>", views.pack),
     path("song/<int:songid>", views.chart_list),
     path("songs", views.list_all_songs),
+    path("search", views.search),
+    path("search/<str:search_type>/<str:search_query>", views.search),
     path("", views.main),
     ]
 
