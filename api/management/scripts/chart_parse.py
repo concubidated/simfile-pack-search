@@ -21,13 +21,17 @@ class Chart:
                 f"credit={self.credit}, lastsecondhint={self.lastsecondhint}, "
                 f"npspeak={self.npspeak}, chartkey={self.chartkey}, taps={self.taps})")
 
-
 class Song:
     """Song is the song, contains metadata and charts"""
-    def __init__(self, title, artist, subtitle, credit, banner, bpms, filename, musiclength):
+    def __init__(self, title, artist, subtitle, titletranslit,
+                 artisttranslit, subtitletranslit, credit, banner,
+                 bpms, filename, musiclength):
         self.title = title
         self.artist = artist
         self.subtitle = subtitle
+        self.titletranslit = titletranslit
+        self.artisttranslit = artisttranslit
+        self.subtitletranslit = subtitletranslit
         self.credit = credit
         self.banner = banner
         self.songlength = musiclength
@@ -51,6 +55,9 @@ def song_to_dict(song):
         "title": song.title,
         "artist": song.artist,
         "subtitle": song.subtitle,
+        "titletranslit": song.titletranslit,
+        "artisttranslit": song.artisttranslit,
+        "subtitletranslit": song.subtitletranslit,
         "credit": song.credit,
         "banner": song.banner,
         "songlength": song.songlength,
@@ -99,9 +106,12 @@ def parse_ssc_data(data):
         "title": re.compile(r"^#TITLE:(.*);"),
         "artist": re.compile(r"^#ARTIST:(.*);"),
         "subtitle": re.compile(r"^#SUBTITLE:(.*);"),
+        "titletranslit": re.compile(r"^#TITLETRANSLIT:(.*);"),
+        "artisttranslit": re.compile(r"^#ARTISTTRANSLIT:(.*);"),
+        "subtitletranslit": re.compile(r"^#SUBTITLETRANSLIT:(.*);"),
         "credit": re.compile(r"^#CREDIT:(.*);"),
         "banner": re.compile(r"^#BANNER:(.*);"),
-        "bpms": re.compile(r"^#BPMS:(.*)\n"),
+        "bpms": re.compile(r"^#BPMS:(.*)"),  # Note: no semicolon at the end
         "songlength": re.compile(r"#MUSICLENGTH:(.*);"),
         "filename": re.compile(r"#SONGFILENAME:(.*);")
     }
@@ -121,6 +131,8 @@ def parse_ssc_data(data):
 
     current_chart = None
     parsing_chart = False
+    parsing_bpms = False
+    bpm_data = set()
 
     # Iterate through each line
     for line in lines:
@@ -132,10 +144,30 @@ def parse_ssc_data(data):
                 match = pattern.match(line)
                 if match:
                     value = match.group(1).strip()
+                    if key == "bpms":
+                        parsing_bpms = True
+                        continue
                     if not song:
-                        song = Song(title="", artist="", subtitle="", credit="",
+                        song = Song(title="", artist="", subtitle="", titletranslit="",
+                                    artisttranslit="", subtitletranslit="", credit="",
                                     filename="", musiclength=0.0, banner="", bpms="")
                     setattr(song, key, value)
+
+        # Continue parsing BPM data if in progress
+        if parsing_bpms:
+            if ";" not in line:
+                bpm_data.add(int(float(line.split("=")[1])))
+                continue
+            else:
+                min_bpm = min(bpm_data)
+                max_bpm = max(bpm_data)
+                if min_bpm == max_bpm:
+                    bpms = str(min_bpm)
+                else:
+                    bpms = f"{min_bpm}-{max_bpm}"
+                song.bpms = bpms
+                parsing_bpms = False
+            continue
 
         # Detect start of a new chart
         if line in ("#NOTEDATA:;", "#NOTES:;"):
@@ -144,7 +176,7 @@ def parse_ssc_data(data):
                     charts.append(current_chart)
             parsing_chart = True
             current_chart = Chart(charttype="", difficulty="", meter=0,
-                                  credit="",lastsecondhint=0.0, npspeak=0.0,
+                                  credit="", lastsecondhint=0.0, npspeak=0.0,
                                   npsgraph=[], chartkey="", taps="")
 
         # Parse chart-specific data
@@ -165,7 +197,6 @@ def parse_ssc_data(data):
 
     # Save the last chart
     if current_chart:
-        # lets not save light charts lol
         if "lights" not in current_chart.charttype.lower():
             charts.append(current_chart)
 

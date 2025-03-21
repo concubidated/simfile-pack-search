@@ -69,10 +69,13 @@ class Song(models.Model):
     credit = models.JSONField(default=list)
     artist = models.CharField(max_length=255)
     subtitle = models.CharField(max_length=255)
+    titletranslit = models.CharField(max_length=255, blank=True, null=True)
+    artisttranslit = models.CharField(max_length=255, blank=True, null=True)
+    subtitletranslit = models.CharField(max_length=255, blank=True, null=True)
     filename = models.CharField(max_length=100)
     songlength = models.FloatField(default=0)
     banner = models.CharField(max_length=255, blank=True, null=True)
-    bpms = models.CharField(max_length=100, blank=True, null=True)  # Can store BPMs as a string
+    bpms = models.CharField(max_length=100, blank=True, null=True)
 
     def song_length_formatted(self):
         minutes = int(self.songlength // 60)

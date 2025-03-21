@@ -329,9 +329,9 @@ class Command(BaseCommand):
                 styletype.add(chart['charttype'].split('-')[0])
 
 
-            pack.types = list(styletype).sort()
-            pack.style = list(charttype).sort()
-            pack.authors = list(chart_credits).sort()
+            pack.types = sorted(list(styletype))
+            pack.style = sorted(list(charttype))
+            pack.authors = sorted(list(chart_credits))
             pack.scanned = 1
             pack.save()
 
