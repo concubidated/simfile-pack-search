@@ -95,7 +95,12 @@ def convert_video_to_gif(banner_path):
     reduced_frames = video[::step]
     # Resize frames and reduce colors
     resized_frames = [
-        Image.fromarray(frame).resize((int(width*resize_factor), int(height*resize_factor)), Image.LANCZOS).convert('P', palette=Image.ADAPTIVE, colors=colors)
+        Image.fromarray(frame)
+        .resize(
+            (int(width * resize_factor), int(height * resize_factor)),
+            Image.LANCZOS
+        )
+        .convert('P', palette=Image.ADAPTIVE, colors=colors)
         for frame in reduced_frames
     ]
 
@@ -224,7 +229,7 @@ class Command(BaseCommand):
             # At this point we can create the Packs object
             # packname, filesized, scanned, banner, date, scanned,
             # pack.ini will have some of that too
-                    
+
             try:
                 pack, _ = Pack.objects.get_or_create(
                     name=name,

@@ -78,6 +78,7 @@ class Song(models.Model):
     bpms = models.CharField(max_length=100, blank=True, null=True)
 
     def song_length_formatted(self):
+        """Formats the song length"""
         minutes = int(self.songlength // 60)
         seconds = int(self.songlength % 60)
         return f"{minutes}:{seconds:02d}"

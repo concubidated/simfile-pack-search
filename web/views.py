@@ -19,7 +19,7 @@ def search(request, search_type=None, search_query=None):
     if not search_type or not search_query:
         search_type = request.POST.get("type")
         search_query = request.POST.get("search")
-        return redirect("/search/{}/{}".format(search_type, search_query))
+        return redirect(f"/search/{search_type}/{search_query}")
 
 
     valid_types = ["title", "artist", "credit"]
@@ -27,7 +27,7 @@ def search(request, search_type=None, search_query=None):
         return redirect("/")
 
     charts_qs = Chart.objects.only("meter", "difficulty", "charttype")
-
+    songs = None
     if "title" in search_type:
         songs = (
             Song.objects.prefetch_related(
@@ -91,7 +91,13 @@ def pack(request, packid):
         )
 
     parent_pack = Pack.objects.filter(id=packid).annotate(song_count=Count('songs')).first()
-    charts = Chart.objects.filter(song__pack=packid).values('meter').annotate(count=Count('id')).order_by('meter')
+    charts = (
+        Chart.objects
+        .filter(song__pack=packid)
+        .values('meter')
+        .annotate(count=Count('id'))
+        .order_by('meter')
+    )
 
     meter_dist = {}
     chart_info = {'count': 0}
@@ -117,7 +123,7 @@ def pack(request, packid):
         "styles": get_all_styles(packid),
         "translit": translit
     }
-    
+
     return render(request, "pack.html",  context)
 
 def song_list(request, packid):

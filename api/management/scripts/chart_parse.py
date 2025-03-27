@@ -161,15 +161,14 @@ def parse_ssc_data(data):
             if ";" not in line:
                 bpm_data.add(int(float(line.split("=")[1])))
                 continue
+            min_bpm = min(bpm_data)
+            max_bpm = max(bpm_data)
+            if min_bpm == max_bpm:
+                bpms = str(min_bpm)
             else:
-                min_bpm = min(bpm_data)
-                max_bpm = max(bpm_data)
-                if min_bpm == max_bpm:
-                    bpms = str(min_bpm)
-                else:
-                    bpms = f"{min_bpm}-{max_bpm}"
-                song.bpms = bpms
-                parsing_bpms = False
+                bpms = f"{min_bpm}-{max_bpm}"
+            song.bpms = bpms
+            parsing_bpms = False
             continue
 
         # Detect start of a new chart

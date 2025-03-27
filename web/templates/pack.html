@@ -50,8 +50,7 @@
         <thead class="table-dark">
         <tr>
             <th>Banner</th>
-            <th>Title</th>
-            <th>Artist</th>
+            <th>Song</th>
             <th>Subtitle</th>
             <th>Song Length</th>
             <th>BPM</th>
@@ -69,8 +68,7 @@
 			{% else %}<img class="img-fluid rounded" style="max-height:100px;" src="/media/images/packs/nobanner.png"></td>
 			{% endif %}
 		    </td>
-		    <td class="translatable small text-center"><a data-translated="{{ song.titletranslit|slice:':64' }}" href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></td>
-            <td data-translated="{{ song.artisttranslit|slice:':64' }}" class="translatable small text-center">{{ song.artist|slice:":64" }}</td>
+		    <td class="small text-center"><span class="translatable"><a data-translated="{{ song.titletranslit|slice:':64' }}" href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></span><br><span class="small translatable" data-translated="{{ song.artisttranslit|slice:':64' }}">{{ song.artist|slice:":64" }}</span></td>
 		    <td data-translated="{{ song.subtitletranslit|slice:':64' }}" class="translatable small text-center">{{ song.subtitle|slice:":64" }}</td>
 		    <td class="small text-center">{{ song.song_length_formatted }}</td>
 		    <td class="small text-center">{{ song.bpms }}</td>
