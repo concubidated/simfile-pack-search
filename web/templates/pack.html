@@ -56,7 +56,7 @@
             <th>BPM</th>
             <th>Credit</th>
             <th>Chart Types</th>
-		    <th>Meter Range</th>
+            <th>Meter Range</th>
         </tr>
         </thead>
         <tbody>
@@ -91,9 +91,6 @@
             </td>
         </tr>
         {% empty %}
-        <tr>
-            <td colspan="7" class="text-center">No songs available.</td>
-        </tr>
         {% endfor %}
         </tbody>
     </table>
@@ -188,7 +185,7 @@
         let activeFilters = [];
         // Custom filter logic for JSON data-sort field
         $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-            var jsonTypeData = $(table.row(dataIndex).node()).find('td:eq(7)').data('sort');
+            var jsonTypeData = $(table.row(dataIndex).node()).find('td:eq(6)').data('sort');
             try {
                 var packTypes = JSON.parse(jsonTypeData.replace(/'/g, '"')); // Convert to valid JSON format
             } catch (e) {
