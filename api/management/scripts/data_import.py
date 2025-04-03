@@ -35,15 +35,14 @@ def save_song_chart_data(pack, data):
         if created:
             saved_songs += 1  # Track new songs added
 
-        # Avoid duplicate chart entries
         for chart in parsed.charts:
-            if not Chart.objects.filter(chartkey=chart.chartkey).exists():
+            if not Chart.objects.filter(song=song, chartkey=chart.chartkey).exists():  # Ensure uniqueness
                 Chart.objects.create(
                     song=song,
                     charttype=chart.charttype,
                     difficulty=chart.difficulty,
                     meter=chart.meter,
-                    author=chart.credit,
+                    author=chart.credit[:128],
                     lastsecondhint=chart.lastsecondhint,
                     npspeak=chart.npspeak,
                     npsgraph=json.dumps(chart.npsgraph),

@@ -92,7 +92,7 @@ class Chart(models.Model):
     charttype = models.CharField(max_length=50)
     difficulty = models.CharField(max_length=50)
     meter = models.IntegerField()
-    author = models.CharField(max_length=64)
+    author = models.CharField(max_length=128)
     lastsecondhint = models.FloatField()
     npspeak = models.FloatField()
     npsgraph = models.JSONField(default=list)
