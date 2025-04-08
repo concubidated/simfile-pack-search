@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pack - {{ pack.name }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% load static %}
+</head>
+<body class="container my-4 bg-dark text-light">
+    <h1 class="text-center mb-4">{{ song.title }}</h1>
+    <h2 class="text-center mb-4">{{ song.artist }}</h2>
+    <div class="row mb-4">
+        <div class="col-md-4 text-center">
+            {% if song.banner %}
+                <img class="img-fluid rounded" src="/media/images/songs/{{ song.banner }}" alt="{{ song.title }}">
+            {% endif %}
+            <ul class="list-group mt-3">
+		    <li class="list-group-item bg-dark text-light"><strong>Pack:</strong><a href="/pack/{{ pack.id}}"> {{ pack.name }}</a></li>
+		{% if song.subtitle %}
+                <li class="list-group-item bg-dark text-light"><strong>Subtitle:</strong> {{ song.subtitle }}</li>
+		{% endif %}
+                <li class="list-group-item bg-dark text-light"><strong>Length:</strong> {{ song.song_length_formatted }}</li>
+		<li class="list-group-item bg-dark text-light"><strong>BPM:</strong> {{ song.bpms }}</li>
+            </ul>
+        </div>
+        <div class="col-md-8">
+            <canvas id="difficultyGraph" width="400" height="150"></canvas>
+            <div id="filterCheckboxes">
+                {% if styles|length > 1 %}
+                {% for style in styles %}
+                <input type="checkbox" class="filter-checkbox" value="{{ style }}"> {{ style }}<br>
+                {% endfor %}
+                {% endif %}
+            </div>
+            <label>
+                {% if translit %}
+                <input type="checkbox" id="toggleLanguage"> Show Translated Data
+                {% endif %}
+            </label>
+        </div>
+    </div>
+
+
+    <div id="chart-buttons" class="mb-3">
+    {% for chart in charts %}
+        <button 
+	    class="btn btn-primary mb-1 {% if forloop.first %}active{% endif %}"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#collapse-{{ chart.id }}"
+	    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+            aria-controls="collapse-{{ chart.id }}"
+            onclick="hideOthers('{{ chart.id }}')"
+        >
+            {{ chart.charttype }} {{ chart.meter }}
+        </button>
+    {% endfor %}
+</div>
+
+<div id="chart-details">
+    {% for chart in charts %}
+        <div 
+            id="collapse-{{ chart.id }}"
+	    class="collapse {% if forloop.first %}show{% endif %} mb-2"
+        >
+            <div class="card card-body bg-dark">
+                <strong>{{ chart.charttype }}</strong><br>
+                Meter: {{ chart.meter }}<br>
+                Taps: {{ chart.taps }}<br>
+		Chartkey: {{ chart.chartkey }}<br>
+		NPS Peak: {{ chart.npspeak }}<br>
+		<canvas id="chart-{{ chart.id }}" style="display: block; box-sizing: border-box; height: 250px; width: 800px;"></canvas>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+function hideOthers(currentId) {
+    const allCollapses = document.querySelectorAll('#chart-details .collapse');
+
+    allCollapses.forEach(collapseEl => {
+        const id = collapseEl.id.split('collapse-')[1];
+        const collapseInstance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+
+        if (id !== currentId) {
+            collapseInstance.hide();
+        }
+    });
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% for chart in charts %}
+
+const ctx{{ chart.id }} = document.getElementById('chart-{{ chart.id }}');
+createChart(ctx{{ chart.id }}, {{ chart.npsgraph }});
+
+{% endfor  %}
+function createChart(ctx, data) {
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map((_, index) => index),
+            datasets: [{
+                data: data,
+                borderColor: 'blue',
+                borderWidth: 0,
+		backgroundColor: 'grey',
+                fill: true,
+                tension: 0.4 // Interpolation mode for smooth curves
+            }]
+        },
+        options: {
+            elements: {
+                    point: {
+                            radius: 0,
+                    }
+            },
+            responsive: false,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: false // Hides x-axis since labels aren't needed
+                },
+                y: {
+                    display: true, // Hides y-axis for simplicity
+                    //suggestedMax: 15,
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false // No legend for a minimal look
+                }
+            }
+        }
+    });
+}
+</script>
+
+<script>
+    var ctx = document.getElementById('difficultyGraph').getContext('2d');
+    var difficultyGraph = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for key, value in meter_dist.items %}{{ key }}, {% endfor %}]
+            ,
+            datasets: [{
+                label: 'Difficulty Distribution',
+                data: [{% for key, value in meter_dist.items %}{{ value }}, {% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Chart Count',
+                        color: '#e0e0e0'
+                    },
+                    ticks: {
+                        color: '#e0e0e0'
+                    },
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Meter',
+                        color: '#e0e0e0'
+                    },
+                    ticks: {
+                        color: '#e0e0e0'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#e0e0e0'
+                    }
+                }
+            }
+        }
+    });
+
+        // Store original text in "data-original" attribute for each translatable cell
+        function storeOriginalText() {
+            $('.translatable').each(function () {
+                var textNode = $(this).contents().filter(function () { return this.nodeType === 3; }).first();
+                if (textNode.length && !$(this).attr('data-original')) {
+                    $(this).attr('data-original', textNode.text().trim());
+                }
+                // Handle links inside the <td>
+                $(this).find('a').each(function () {
+                    var linkTextNode = $(this).contents().filter(function () { return this.nodeType === 3; }).first();
+                    if (linkTextNode.length && !$(this).attr('data-original')) {
+                        $(this).attr('data-original', linkTextNode.text().trim());
+                    }
+                });
+            });
+        }
+
+        // Toggle between original and translated text
+        function toggleLanguage() {
+            var showTranslated = $('#toggleLanguage').is(':checked');
+
+            $('.translatable').each(function () {
+                var originalText = $(this).attr('data-original');
+                var translatedText = $(this).attr('data-translated');
+                var textNode = $(this).contents().filter(function () { return this.nodeType === 3; }).first();
+
+                if (textNode.length) {
+                    if (showTranslated && translatedText) {
+                        textNode[0].nodeValue = translatedText;
+                    } else {
+                        textNode[0].nodeValue = originalText;
+                    }
+                }
+
+                // Handle links inside the <td>
+                $(this).find('a').each(function () {
+                    var linkOriginalText = $(this).attr('data-original');
+                    var linkTranslatedText = $(this).attr('data-translated');
+                    var linkTextNode = $(this).contents().filter(function () { return this.nodeType === 3; }).first();
+
+                    if (linkTextNode.length) {
+                        if (showTranslated && linkTranslatedText) {
+                            linkTextNode[0].nodeValue = linkTranslatedText;
+                        } else {
+                            linkTextNode[0].nodeValue = linkOriginalText;
+                        }
+                    }
+                });
+            });
+        }
+
+        // Store original text initially
+        storeOriginalText();
+
+    });
+</script>
+

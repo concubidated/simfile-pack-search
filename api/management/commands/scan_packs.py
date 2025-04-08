@@ -9,12 +9,16 @@ import glob
 import shutil
 import zipfile
 import hashlib
+import logging
+import chardet
 import subprocess
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 import humanize
 import lz4.block
 import imageio.v3 as iio
+import imageio
 from PIL import Image
 import numpy as np
 
@@ -22,8 +26,16 @@ from django.core.management.base import BaseCommand
 from django.db.models import Count
 from django.db import IntegrityError
 
-from api.models import Pack, Song, Chart
+from api.models import Pack, Song, Chart, ChartData
 from api.management.scripts import sqlite_query, data_import, chart_parse
+
+## Constants
+working_path = os.getenv('OUTFOX_WORKING_PATH', './working')
+outfox_song_path = os.path.join(working_path, 'Songs')
+outfox_cache_path = os.path.join(working_path, 'Cache')
+docker_path = "registry.digitalocean.com/outfox-containers/cache-builder"
+
+logger = logging.getLogger(__name__)
 
 def convert_seconds(seconds):
     """Converts seconds into human readable format"""
@@ -40,6 +52,19 @@ def convert_seconds(seconds):
         parts.append(f"{secs}s")
 
     return " ".join(parts)
+
+def extract_file(zip_ref, member, path):
+    """Extract s single file from the zip"""
+    zip_ref.extract(member, path)
+
+def unzip_fast(file, path, workers=8):
+    """Multi-threaded unzip wrapper"""
+    with zipfile.ZipFile(file, 'r') as zip_ref:
+        members = zip_ref.namelist()
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for member in members:
+                executor.submit(extract_file, zip_ref, member, path)
 
 def unzip(file, path):
     """Simple unzip wrapper"""
@@ -116,6 +141,58 @@ def convert_video_to_gif(banner_path):
     optimize_gif(f"{banner_path}.gif")
     os.rename(f"{banner_path}.gif", banner_path)
 
+def convert_video_to_gif_2(banner_path):
+    """Convert a video to a GIF without loading everything into memory."""
+    reader = imageio.get_reader(banner_path)  # Stream video instead of loading all frames
+    meta = reader.get_meta_data()  # Get video metadata
+
+    colors = 256
+    target_fps = 10
+    width, height = meta["size"]
+
+    resize_factor = 1.0
+    if width > 512:  # Resize large banners
+        resize_factor = 512.0 / width
+
+    original_fps = meta.get("fps", 30)  # Default to 30 FPS if missing
+    step = max(1, round(original_fps / target_fps))  # Skip frames to match target FPS
+
+    frames = []
+
+    for i, frame in enumerate(reader):
+        if i % step == 0:  # Skip frames to match target FPS
+            img = Image.fromarray(frame)
+
+            # Resize while maintaining aspect ratio
+            new_size = (int(img.width * resize_factor), int(img.height * resize_factor))
+            img = img.resize(new_size, Image.LANCZOS)
+
+            # Convert to GIF palette
+            img = img.convert("P", palette=Image.ADAPTIVE, colors=colors)
+            frames.append(img)
+
+            # Stop if too many frames (optional safeguard)
+            if len(frames) > 100:
+                break
+
+    if len(frames) >  1:
+        gif_path = f"{banner_path}.gif"
+        frames[0].save(
+            gif_path,
+            save_all=True,
+            append_images=frames[1:],
+            duration=int(1000 / target_fps),  # Duration per frame
+            loop=0,
+            optimize=True
+        )
+
+        optimize_gif(gif_path)  # Optimize GIF size
+        os.rename(gif_path, banner_path)  # Replace original file with GIF
+        #print(f"GIF saved: {banner_path}")
+    else:
+        print(f"GIF has no frames: {banner_path}")
+        exit()
+
 def optimize_gif(banner_path):
     """Run gifsicle to reduce the size"""
     if not shutil.which("gifsicle"):
@@ -157,11 +234,6 @@ class Command(BaseCommand):
         # the scanned boolean to false in the db
         rescan = True
 
-        # temp path to use for generating the outfox cache
-        working_path = os.getenv('OUTFOX_WORKING_PATH', './working')
-        outfox_song_path = os.path.join(working_path, 'Songs')
-        outfox_cache_path = os.path.join(working_path, 'Cache')
-
         shutil.rmtree(outfox_song_path, ignore_errors=True)
         os.makedirs(outfox_song_path, exist_ok=True)
 
@@ -192,6 +264,7 @@ class Command(BaseCommand):
 
             # lets do the thing
             unzip(pack_path, outfox_song_path)
+            #unzip_fast(pack_path, outfox_song_path, workers=8)
             if not os.path.exists(fullpath):
                 print(f"{pack_path} skipped, directory path wrong")
                 continue
@@ -207,7 +280,7 @@ class Command(BaseCommand):
                 file_ext = os.path.splitext(banner)[1]  # Get the extension (e.g., .txt, .png)
                 file_hash = hashlib.sha1(banner.encode()).hexdigest()
                 if file_ext in {".avi", ".mp4"}:
-                    convert_video_to_gif(banner)
+                    convert_video_to_gif_2(banner)
                     file_ext = ".gif"
                 new_banner = f"{file_hash}{file_ext}"
                 destination_path = os.path.join('media/images/packs/', new_banner)
@@ -243,12 +316,10 @@ class Command(BaseCommand):
                 pack = Pack.objects.get(name=name)
 
 
-            # next we will run outfox --cache via docker
-            docker_path = "registry.digitalocean.com/outfox-containers/cache-builder"
-
             # delete song.db from cache
             Path(f"{outfox_cache_path}/song.db").unlink(missing_ok=True)
 
+            # run outfox --cache via docker
             try:
                 rc = subprocess.run(["docker",
                                         "run",
@@ -298,7 +369,7 @@ class Command(BaseCommand):
                 # if an image file was found, lets save it
                 if song_banner:
                     if banner_ext.lower() in {".avi", ".mp4"}:
-                        convert_video_to_gif(song_banner)
+                        convert_video_to_gif_2(song_banner)
                         banner_ext = ".gif"
                     new_song_banner = f"{banner_hash}{banner_ext}"
                     destination_path = os.path.join('media/images/songs/', new_song_banner)
@@ -348,6 +419,12 @@ class Command(BaseCommand):
             pack.scanned = 1
             pack.save()
 
+
+            # Before we remove the packs lets parse out the actual notedata and save it from sm or ssc files
+            charts = Chart.objects.filter(song__pack=pack)
+            for chart in charts:
+                save_notedata(chart)
+
             # remove the pack from the working directory before moving on to the next one
             shutil.rmtree(fullpath)
 
@@ -365,3 +442,125 @@ class Command(BaseCommand):
 
         # after all are complete we can run s3 sync on the packs folder and any changes
         # will be syned, that include new packs and changed packs.
+
+def save_notedata(chart):
+    """Parse the chart data from the sm/ssc file and save it to the db"""
+    difficulty_map = {
+        "basic": "Easy",
+        "light": "Easy",
+        "another": "Medium",
+        "trick": "Medium",
+        "standard": "Medium",
+        "difficult": "Medium",
+        "ssr": "Hard",
+        "maniac": "Hard",
+        "heavy": "Hard",
+        "smaniac": "Challenge",
+        "expert": "Challenge",
+        "oni": "Challenge",
+    }
+
+    is_ssc = False
+    chart_filename = chart.song.filename
+    meter = chart.meter
+    difficulty = chart.difficulty
+    charttype = chart.charttype
+
+    if chart_filename.lower().endswith(('.ssc', '.sm')):
+        if chart_filename.lower().endswith('.ssc'):
+            is_ssc = True
+        chart_path = working_path + chart_filename
+        if os.path.exists(chart_path):
+            lines = read_lines_decoded(chart_path)
+            # now we need to find the actual chart, pull all of the notedata out and store it in the db
+            for line in lines:
+                chart_found = False 
+                meta_found = False 
+                file_charttype = ""
+                file_difficulty = ""
+                file_description = ""
+                file_meter = 0
+
+                if is_ssc:
+                    if line.startswith("#NOTEDATA:"):
+                        while True:
+                            next_line = next(lines, None).strip()
+                            if next_line.startswith("#STEPSTYPE:"):
+                                file_charttype = next_line[len("#STEPSTYPE:"):].strip(';').strip()
+                            elif next_line.startswith("#DIFFICULTY:"):
+                                file_difficulty = next_line[len("#DIFFICULTY:"):].strip(';').strip()
+                            elif next_line.startswith("#METER:"):
+                                file_meter = int(next_line[len("#METER:"):].strip(';').strip())
+                            elif next_line.startswith("#NOTES:"):
+                                meta_found = True
+                                break
+                else:
+                    if line.strip().startswith("#NOTES:"):
+                        file_charttype = next(lines, None).strip().rstrip(':')
+                        file_description = next(lines, None).strip().rstrip(":")
+                        file_difficulty = next(lines, None).strip().rstrip(":")
+                        file_meter = int(next(lines, None).strip().rstrip(":"))
+                        meta_found = True
+                    
+                if meta_found:
+                    # Convert difficulty name using map for old difficulty names
+                    diff_name = difficulty_map.get(file_difficulty.lower(), file_difficulty)
+
+                    # Stepmania never had a Challenge back in v1.64-v3.0 so we have to check for a stupid special 
+                    # case where the chart is hard, but the description is "challenge or smaniac"
+                    if diff_name.lower() == 'hard':
+                        if "challenge" == file_description.lower() or "smaniac" == file_description.lower():
+                            diff_name = "Challenge"
+
+                    # if all these match, it means this is the correct notedata, let save it
+                    if (file_charttype.lower(), file_meter, diff_name.lower()) == (charttype.lower(), meter, difficulty.lower()):
+                        notedata = ""
+                        # skip additional metadata if it exists
+                        while True:
+                            check_line = next(lines, None)
+                            if ":" not in check_line and check_line.strip() != "" and "; " not in check_line:
+                                notedata += check_line
+                                notedata += '\n'
+                                break
+                        while True:
+                            line = next(lines, None)
+                            notedata += line
+                            notedata += '\n'
+                            if ';' in line:
+                                chart_found = True
+                                break
+                    else:
+                        while True:
+                            line = next(lines, None).strip()
+                            if ';' in line:
+                                break
+                if chart_found:
+                    chart_data = ChartData(chart=chart, data=notedata)
+                    chart_data.save()
+                    return
+            if not chart_found:
+                    logger.debug(f"No chart Found for {chart_path} {charttype} {meter} {difficulty}")
+                    print(f"No Chart found for {chart_path} {charttype} {meter} {difficulty}")
+                    return
+        else:
+            logger.error(f"file missing {chart_path}")
+            exit()
+    else:
+        logger.debug(f"Chart is not a parsable file type {chart_filename}")
+        return
+    logger.error(f"Chart was not parsed: {chart_filename} {difficulty} {charttype} {meter}")
+    print(f"Chart was note parsed: {chart_filename} {difficulty} {chartype} {meter}")
+
+def read_lines_decoded(file_path):
+    with open(file_path, 'rb') as f:
+        raw_data = f.read()
+
+    result = chardet.detect(raw_data)
+    encoding = result['encoding']
+
+    if encoding == "Windows-1252":
+        encoding = "utf-8"
+
+    decoded_data = raw_data.decode(encoding, errors='replace')
+    
+    return iter(decoded_data.splitlines())

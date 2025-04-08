@@ -80,12 +80,24 @@ def chart_to_dict(chart):
         "taps": chart.taps
     }
 
-def parse_taps(taps):
-    """Parses the taps string from the notedata."""
-    data = taps.replace("#TAPS:", "").strip(";")
-    items = data.split(",")
-    parsed_data = {items[i]: int(items[i + 1]) for i in range(0, len(items), 2)}
-    return parsed_data
+
+def parse_radar(values):
+    """Parses the radarvalues and pull taps/steps/jumps etc"""
+    data = values.split(",")
+
+    if len(values) < 15:
+        return None
+
+    # Convert String numbers to ints
+    data = list(map(int, map(float, data)))
+
+    radar_keys = [
+            "total", "taps", "jumps", "holds", "mines",
+            "hands", "rolls", "lifts", "fakes"
+    ]
+
+    radar_data = dict(zip(radar_keys, data[5:14]))
+    return radar_data
 
 def parse_ssc_data(data):
     """Parses decompressed SSC data into Song and Chart objects."""
@@ -97,7 +109,6 @@ def parse_ssc_data(data):
             result['encoding'] = "utf-8"
         data = data.decode(result['encoding'], errors='replace')
 
-    # Split data into lines
     lines = data.splitlines()
 
     # Initialize song variables
@@ -129,7 +140,7 @@ def parse_ssc_data(data):
         "npspeak": re.compile(r"^#NPSPEAK:(.*);"),
         "npsgraph": re.compile(r"^#NPSGRAPH:(.*);"),
         "chartkey": re.compile(r"^#CHARTKEY:(.*);"),
-        "taps": re.compile(r"^#TAPS:(.*);")
+        "taps": re.compile(r"^#RADARVALUES:(.*);")
     }
 
     current_chart = None
@@ -194,7 +205,7 @@ def parse_ssc_data(data):
                     elif key == "npsgraph":
                         value = [float(x) for x in value.split(",") if x]
                     elif key == "taps":
-                        value = parse_taps(value)
+                        value = parse_radar(value)
                     setattr(current_chart, key, value)
 
     # Save the last chart

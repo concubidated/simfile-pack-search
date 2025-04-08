@@ -72,7 +72,7 @@ class Song(models.Model):
     titletranslit = models.CharField(max_length=255, blank=True, null=True)
     artisttranslit = models.CharField(max_length=255, blank=True, null=True)
     subtitletranslit = models.CharField(max_length=255, blank=True, null=True)
-    filename = models.CharField(max_length=100)
+    filename = models.CharField(max_length=255)
     songlength = models.FloatField(default=0)
     banner = models.CharField(max_length=255, blank=True, null=True)
     bpms = models.CharField(max_length=100, blank=True, null=True)
@@ -104,3 +104,12 @@ class Chart(models.Model):
 
     def __str__(self):
         return f"{self.song.__str__()} - {self.difficulty} ({self.meter} - {self.charttype})"
+
+class ChartData(models.Model):
+    """Full notedata of a chart"""
+    chart = models.ForeignKey(Chart, on_delete=models.CASCADE, related_name="chartdata") # Link to Chart
+    data = models.TextField()
+
+    def __str__(self):
+        return f"Notedata for {self.chart.__str__()}"
+

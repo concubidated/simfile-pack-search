@@ -22,7 +22,7 @@ def save_song_chart_data(pack, data):
                 titletranslit=parsed.titletranslit[:255],
                 artisttranslit=parsed.artisttranslit[:255],
                 subtitletranslit=parsed.subtitletranslit[:255],
-                filename=parsed.filename[:100],
+                filename=parsed.filename[:255],
                 credit=parsed.credit,
                 banner=parsed.banner,
                 defaults={"songlength": parsed.songlength,

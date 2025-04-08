@@ -99,14 +99,16 @@ def pack(request, packid):
         .order_by('meter')
     )
 
-    meter_dist = {}
     chart_info = {'count': 0}
-    for chart in charts:
-        meter_dist[chart['meter']] = chart['count']
-        chart_info['count'] += chart['count']
+    meter_dist = {}
 
-    chart_info['min_meter'] = min(meter_dist.keys())
-    chart_info['max_meter'] = max(meter_dist.keys())
+    if charts:
+        for chart in charts:
+            meter_dist[chart['meter']] = chart['count']
+            chart_info['count'] += chart['count']
+
+        chart_info['min_meter'] = min(meter_dist.keys())
+        chart_info['max_meter'] = max(meter_dist.keys())
 
     # Check if any song in the pack has translations
     translit = any(
@@ -135,7 +137,13 @@ def chart_list(request, songid):
     """list all the charts for a song"""
     charts = Chart.objects.filter(song=songid).order_by("meter")
     song = Song.objects.get(id=songid)
-    return render(request, "charts.html", {"charts": charts, "song": song})
+    pack = Pack.objects.get(id=song.pack.id)
+    context = {
+        "song": song,
+        "charts": charts,
+        "pack": pack
+    }
+    return render(request, "song.html", context)
 
 def main(request):
     """main pack list"""
