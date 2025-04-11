@@ -10,11 +10,56 @@
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jcanvas/21.0.1/jcanvas.js"></script>
     {% load static %}
+
+
+<style>
+.collapsing {
+  transition: none !important;
+}
+.render {
+      width: 276px;
+      height: 300px;
+      position: relative;
+      border: 1px solid #ccc;
+      overflow: hidden;
+    }
+
+/* The scrollable area */
+.scrollbar-notes {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow-y: scroll;
+      z-index: 1;
+}
+
+/* Fake scroll height filler */
+.fake-scroll {
+      width: 1px;
+      height: 5000px; /* Large enough for all virtual rows */
+}
+
+/* Fixed canvas on top */
+.canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+      pointer-events: none; /* Let scroll events pass through */
+}
+
+</style>
+
 </head>
 <body class="container my-4 bg-dark text-light">
-    <h1 class="text-center mb-4">{{ song.title }}</h1>
-    <h2 class="text-center mb-4">{{ song.artist }}</h2>
+    <h1 class="text-center">{{ song.title }}</h1>
+    <h3 class="text-center">{{ song.artist }}</h3>
     <div class="row mb-4">
         <div class="col-md-4 text-center">
             {% if song.banner %}
@@ -30,13 +75,18 @@
             </ul>
         </div>
         <div class="col-md-8">
-            <canvas id="difficultyGraph" width="400" height="150"></canvas>
+	    <div id="render" class="render">
+	        <div id="scrollbar-notes" class="scrollbar-notes">
+		    <div id="fake-scroll" class="fake-scroll"></div>
+		</div>
+		<canvas id="notefield" width="320"></canvas>
+            </div>
+	    <div class="col-4">
+		<label for="zoom-slider">Zoom: </label>
+		<input type="range" id="zoom-slider" min="1" max="16" value="8" step=".1">
+			<span id="zoom-value">8</span>
+	    </div>
             <div id="filterCheckboxes">
-                {% if styles|length > 1 %}
-                {% for style in styles %}
-                <input type="checkbox" class="filter-checkbox" value="{{ style }}"> {{ style }}<br>
-                {% endfor %}
-                {% endif %}
             </div>
             <label>
                 {% if translit %}
@@ -46,64 +96,237 @@
         </div>
     </div>
 
-
-    <div id="chart-buttons" class="mb-3">
-    {% for chart in charts %}
-        <button 
-	    class="btn btn-primary mb-1 {% if forloop.first %}active{% endif %}"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapse-{{ chart.id }}"
-	    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
-            aria-controls="collapse-{{ chart.id }}"
-            onclick="hideOthers('{{ chart.id }}')"
-        >
-            {{ chart.charttype }} {{ chart.meter }}
-        </button>
-    {% endfor %}
-</div>
+    <div class="container mt-4 mb-4">
+        <!-- Top-level Tabs (Games) -->
+        <ul class="nav nav-tabs" id="gameTabs" role="tablist">
+          {% for game in chart_types %}
+          <li class="nav-item" role="presentation">
+            <button class="nav-link bg-dark text-light {% if forloop.first %}active{% endif %}" id="{{ game }}-tab" data-bs-toggle="tab" data-bs-target="#{{ game }}" type="button" role="tab">{{ game }}</button>
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="tab-content pt-3" id="gameTabsContent">
+          {% for game, styles in chart_types.items %}
+          <!-- TAB PANE -->
+          <div class="tab-pane fade show {% if forloop.first %}active{% endif %}" id="{{ game }}" role="tabpanel">
+            <!-- Styles -->
+            <ul class="nav nav-tabs mb-3" id="{{ game }}StyleTabs" role="tablist">
+            {% for style in styles %}
+              <li class="nav-item" role="presentation">
+                <button class="nav-link bg-dark text-light {% if forloop.first %}active{% endif %}" id="{{ game }}-{{ style }}-tab" data-bs-toggle="tab" data-bs-target="#{{ game }}-{{ style }}" type="button" role="tab">{{ style }}</button>
+              </li>
+            {% endfor %}
+            </ul>
+            {% for style, charts in styles.items %}
+            <div class="tab-content" id="{{ game }}StyleContent">
+              <div class="tab-pane fade show {% if forloop.first %}active{% else %}{% endif %}" id="{{ game }}-{{ style }}" data-toggle="buttons" role="tabpanel" aria-labelledby="{{ game }}-single-tab">
+                <!-- Chart buttons -->
+                {% for id, chart in charts.items %} 
+                <input
+                    type="radio"
+		    class="btn-check {% if chart.difficulty == 'Easy' %}Success
+				{% elif chart.difficulty == 'Medium' %}Warning
+				{% elif chart.difficulty == 'Hard' %}Danger
+				{% elif chart.difficulty == 'Challenge'%}Primary
+				{% elif chart.difficulty == 'Edit'%}Secondary
+				{% else %}{% endif %}"
+                    name="btnradio"
+		    id="button-{{ chart.id }}"
+                    autocomplete="off"
+                    onclick="hideOthers('{{ chart.id }}')"
+		{% if forloop.first %}{% if forloop.parentloop.first %}{% if forloop.parentloop.parentloop.first %}checked{% endif %}{% endif %}{% endif %}>
+                <label class="btn btn-outline-{% if chart.difficulty == 'Easy' %}success
+				{% elif chart.difficulty == 'Medium' %}warning
+				{% elif chart.difficulty == 'Hard' %}danger
+				{% elif chart.difficulty == 'Challenge'%}primary
+				{% elif chart.difficulty == 'Edit'%}secondary
+				{% else %}info{% endif %}" for="button-{{ chart.id }}">{{ chart.difficulty }} {{ chart.meter }}</label>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
 
 <div id="chart-details">
     {% for chart in charts %}
         <div 
             id="collapse-{{ chart.id }}"
-	    class="collapse {% if forloop.first %}show{% endif %} mb-2"
+	        class="collapse {% if forloop.first %}show{% endif %} mb-2"
         >
-            <div class="card card-body bg-dark">
-                <strong>{{ chart.charttype }}</strong><br>
-                Meter: {{ chart.meter }}<br>
-                Taps: {{ chart.taps }}<br>
-		Chartkey: {{ chart.chartkey }}<br>
-		NPS Peak: {{ chart.npspeak }}<br>
-		<canvas id="chart-{{ chart.id }}" style="display: block; box-sizing: border-box; height: 250px; width: 800px;"></canvas>
+            <div class="container bg-dark">
+                <div class="row">
+                    <div class="col-8">
+			<span>Peak Notes/Second: {{ chart.npspeak|floatformat:2}}</span>
+                        <canvas class="mb-4" id="chart-{{ chart.id }}" style="display: block; box-sizing: border-box; height: 200px; width: 500px;"></canvas>
+
+			<table class="mb-4 table table-sm table-borderless table-dark">
+			<tr>
+				<td>Chart Key</td>
+				<td>{{ chart.chartkey}}</td>
+			</tr>
+			</table>
+
+			<hr>
+			{% if chart.common_packs.count > 1 %}
+			<span>Other Packs</span>
+			<table class="table table-sm table-dark">
+                            {% for common_pack in chart.common_packs %}
+			    <tr>
+                            {% if common_pack.id != pack.id %}
+			    <tr>
+                                <td>{{ common_pack.name }}</td>
+			        <td><a href="/pack/{{ common_pack.id }}">Download</a></td> 
+				</tr>
+                            {% endif %}
+                            {% endfor %}
+
+			</table>
+			{% else %}
+			<span>Not found on any other packs</span>
+			{% endif %}
+		    </div>
+		    <div class="col-4">
+			<span>Chart Author: {{ chart.author }}</span>
+			<table class="table table-sm table-dark">
+			{% for key, value in chart.taps.items %}
+			<tr>
+				<td class="text-capitalize"><strong>{{ key }}</strong></td>
+				<td>{{ value }}</td>
+			</tr>
+			{% endfor %}
+			</table>
+                    </div>
+                </div>
             </div>
         </div>
     {% endfor %}
 </div>
 
 <script>
-function hideOthers(currentId) {
-    const allCollapses = document.querySelectorAll('#chart-details .collapse');
 
+{% for chart in charts %}
+	{% if chart.chartdata %}
+        var chart_{{ chart.id }} = {
+            notes: {{ chart.chartdata.data|safe }}, 
+	    charttype: "{{ chart.charttype }}",
+	    width: {{ chart.notefield_width }}
+        };
+
+        // You can log the chart to check
+	{% endif %}
+{% endfor %}
+</script>
+
+<script src="/static/js/chartviewtest.js"></script>
+
+
+<script>
+
+let chartData = null;
+let canvas = $('#render canvas');
+let chartId = null;
+
+function hideOthers(currentId) {
+    chartId = currentId;
+    const allCollapses = document.querySelectorAll('#chart-details .collapse');
+    const currentCollapse = document.getElementById(`collapse-${currentId}`);
+    const currentInstance = bootstrap.Collapse.getOrCreateInstance(currentCollapse, { toggle: false });
+
+    // If the current one is already shown, don't collapse it
+    const isAlreadyVisible = currentCollapse.classList.contains('show');
+
+    // Hide all others
     allCollapses.forEach(collapseEl => {
         const id = collapseEl.id.split('collapse-')[1];
-        const collapseInstance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
-
+        const instance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
         if (id !== currentId) {
-            collapseInstance.hide();
+            instance.hide();
         }
     });
+
+    // Only show it if it wasn't already visible
+    if (!isAlreadyVisible) {
+        currentInstance.show();
+    }
+
+    // Render chart on open
+    const chartVarName = `chart_${currentId}`;
+    chartData = window[chartVarName];
+    if (chartData) {
+	canvas[0].width = chartData.width;
+	canvas.css('width', chartData.width + 'px');
+	$('#render').width(chartData.width+20);
+	drawNoteField(chartData, zoom);
+        //render(canvas, chartData.notes, 10);
+    }
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-{% for chart in charts %}
+function drawNoteField(chart, zoom) {
 
-const ctx{{ chart.id }} = document.getElementById('chart-{{ chart.id }}');
-createChart(ctx{{ chart.id }}, {{ chart.npsgraph }});
+	const size = 64;
+        // recalulate scroll length
+        var length = ((chart.notes.length * size * zoom) + size)
+	$(`#fake-scroll`).height(length)
 
-{% endfor  %}
+	var scrollTop = $(`#scrollbar-notes`).scrollTop();
+
+        const startMeasure = Math.floor(scrollTop / (size * zoom));
+        const endMeasure = Math.min(startMeasure + 24, chart.notes.length - 1);
+
+        let visibleNotes = chart.notes.slice(startMeasure, endMeasure + 1);
+        if (visibleNotes.length === 0 && startMeasure < chart.notes.length) {
+        	visibleNotes = [chart.notes[startMeasure]];
+        }
+
+        // pixel offset
+        const pixelOffset = scrollTop % (size * zoom);
+
+        render(canvas, visibleNotes, zoom, chart.charttype);
+
+        canvas.css({
+        	'transform': `translateY(-${pixelOffset}px)`,
+                'transform-origin': 'top-left'
+        });
+}
+
+// Update on scroll
+$(`.scrollbar-notes`).on('scroll', function() {
+	drawNoteField(chartData, zoom)
+
+});
+
+// Set up zoom slider
+$('#zoom-slider').on('input', function() {
+	// Get the current zoom level
+	zoom = $(this).val();
+	var zoomSpanId = $('#zoom-value');  // Use the correct selector for your chart
+	zoomSpanId.text(zoom);
+		drawNoteField(chartData, zoom);
+	});
+
+</script>
+
+<script>
+$( document ).ready(function() {
+    {% for chart in charts %}
+        const ctx{{ chart.id }} = document.getElementById('chart-{{ chart.id }}');
+        createChart(ctx{{ chart.id }}, {{ chart.npsgraph }});
+    {% endfor %}
+
+    canvas = $('#render canvas')
+    {% with charts|first as initial_chart %}
+	chartId = {{ initial_chart.id }}
+	chartData = chart_{{ initial_chart.id }}
+    	drawNoteField(chartData, zoom);
+    {% endwith %}
+
+});
+
 function createChart(ctx, data) {
     new Chart(ctx, {
         type: 'line',
@@ -144,110 +367,3 @@ function createChart(ctx, data) {
     });
 }
 </script>
-
-<script>
-    var ctx = document.getElementById('difficultyGraph').getContext('2d');
-    var difficultyGraph = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: [{% for key, value in meter_dist.items %}{{ key }}, {% endfor %}]
-            ,
-            datasets: [{
-                label: 'Difficulty Distribution',
-                data: [{% for key, value in meter_dist.items %}{{ value }}, {% endfor %}],
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Chart Count',
-                        color: '#e0e0e0'
-                    },
-                    ticks: {
-                        color: '#e0e0e0'
-                    },
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Meter',
-                        color: '#e0e0e0'
-                    },
-                    ticks: {
-                        color: '#e0e0e0'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    labels: {
-                        color: '#e0e0e0'
-                    }
-                }
-            }
-        }
-    });
-
-        // Store original text in "data-original" attribute for each translatable cell
-        function storeOriginalText() {
-            $('.translatable').each(function () {
-                var textNode = $(this).contents().filter(function () { return this.nodeType === 3; }).first();
-                if (textNode.length && !$(this).attr('data-original')) {
-                    $(this).attr('data-original', textNode.text().trim());
-                }
-                // Handle links inside the <td>
-                $(this).find('a').each(function () {
-                    var linkTextNode = $(this).contents().filter(function () { return this.nodeType === 3; }).first();
-                    if (linkTextNode.length && !$(this).attr('data-original')) {
-                        $(this).attr('data-original', linkTextNode.text().trim());
-                    }
-                });
-            });
-        }
-
-        // Toggle between original and translated text
-        function toggleLanguage() {
-            var showTranslated = $('#toggleLanguage').is(':checked');
-
-            $('.translatable').each(function () {
-                var originalText = $(this).attr('data-original');
-                var translatedText = $(this).attr('data-translated');
-                var textNode = $(this).contents().filter(function () { return this.nodeType === 3; }).first();
-
-                if (textNode.length) {
-                    if (showTranslated && translatedText) {
-                        textNode[0].nodeValue = translatedText;
-                    } else {
-                        textNode[0].nodeValue = originalText;
-                    }
-                }
-
-                // Handle links inside the <td>
-                $(this).find('a').each(function () {
-                    var linkOriginalText = $(this).attr('data-original');
-                    var linkTranslatedText = $(this).attr('data-translated');
-                    var linkTextNode = $(this).contents().filter(function () { return this.nodeType === 3; }).first();
-
-                    if (linkTextNode.length) {
-                        if (showTranslated && linkTranslatedText) {
-                            linkTextNode[0].nodeValue = linkTranslatedText;
-                        } else {
-                            linkTextNode[0].nodeValue = linkOriginalText;
-                        }
-                    }
-                });
-            });
-        }
-
-        // Store original text initially
-        storeOriginalText();
-
-    });
-</script>
-

@@ -107,7 +107,7 @@ class Chart(models.Model):
 
 class ChartData(models.Model):
     """Full notedata of a chart"""
-    chart = models.ForeignKey(Chart, on_delete=models.CASCADE, related_name="chartdata") # Link to Chart
+    chart = models.OneToOneField(Chart, on_delete=models.CASCADE, related_name="chartdata")
     data = models.TextField()
 
     def __str__(self):

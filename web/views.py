@@ -1,18 +1,16 @@
 """web views"""
-import re
+import re, json
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
 from django.shortcuts import render, redirect
 from django.db.models import Prefetch, Min, Max, Count, F, Value
 
-from api.models import Pack, Song, Chart
+from api.models import Pack, Song, Chart, ChartData
 
 def natural_sort_key(text):
     """order numbers naturally cause we are hoomans"""
     return [int(part) if part.isdigit() else part.lower()
             for part in re.split(r'(\d+)', text)]
-
-
 
 def search(request, search_type=None, search_query=None):
     """search for a song"""
@@ -135,14 +133,60 @@ def song_list(request, packid):
 
 def chart_list(request, songid):
     """list all the charts for a song"""
-    charts = Chart.objects.filter(song=songid).order_by("meter")
+    charts = Chart.objects.filter(song=songid).select_related('chartdata').order_by("meter")
     song = Song.objects.get(id=songid)
     pack = Pack.objects.get(id=song.pack.id)
+
+
+    translit = any(getattr(song, field) for field in [
+        "titletranslit", "artisttranslit", "subtitletranslit"
+    ])
+
+
+    chart_types = {}
+
+    for chart in charts:
+        # Lets us build an organized table of chart types
+        game = chart.charttype.split("-")[0]
+        style = chart.charttype.split("-")[1]
+        if game not in chart_types:
+            chart_types[game] = {}
+        if style not in chart_types[game]:
+            chart_types[game][style] = {}
+        chart_types[game][style][chart.id] = chart
+
+        # lets check to see if this chart is in other packs
+        common_packs = Pack.objects.filter(songs__charts__chartkey=chart.chartkey).distinct()
+        chart.common_packs = common_packs
+
+        # Organize chartData for chartviewer.js
+        if hasattr(chart, 'chartdata'):
+            # Strip the measure comments some charts have
+            chart.chartdata.data = re.sub(r'//.*$', '', chart.chartdata.data, flags=re.MULTILINE)
+
+            blocks = [block.strip() for block in chart.chartdata.data.strip().split(",") if block.strip()]
+            notes = []
+            for i, block in enumerate(blocks[:100]):
+                lines = block.splitlines()
+                note_block = []
+                for line in lines:
+                    # Turn "1001" into ["1", "0", "0", "1"]
+                    note_block.append(list(line.strip()))
+                notes.append([i, note_block])
+            column_count = len(notes[0][1][0])
+            chart.chartdata.data = notes
+
+            # Notefield width for each chart
+            chart.notefield_width = 64 * column_count
+
     context = {
         "song": song,
         "charts": charts,
-        "pack": pack
+        "pack": pack,
+        "chart_types": chart_types,
+        "translit": translit,
     }
+
     return render(request, "song.html", context)
 
 def main(request):
@@ -205,6 +249,48 @@ def get_all_styles(packid):
             out.add(s)
     return out
 
-def test(request):
+def test(request, songid=12669, chartid=43108):
     """test view"""
-    return render(request, "test.html")
+    if chartid:
+        charts = Chart.objects.filter(song=songid).filter(id=chartid).select_related('chartdata')
+    else:
+        charts = Chart.objects.filter(song=songid).select_related('chartdata').order_by("meter")
+    song = Song.objects.get(id=songid)
+    pack = Pack.objects.get(id=song.pack.id)
+
+
+    # Strip the measure comments some charts have
+    for chart in charts:
+        if chart.chartdata.data:
+            chart.chartdata.data = re.sub(r'//.*$', '', chart.chartdata.data, flags=re.MULTILINE)
+
+            blocks = [block.strip() for block in chart.chartdata.data.strip().split(",") if block.strip()]
+            notes = []
+            for i, block in enumerate(blocks):
+                lines = block.splitlines()
+                note_block = []
+                for line in lines:
+                    # Turn "1001" into ["1", "0", "0", "1"]
+                    note_block.append(list(line.strip()))
+                notes.append([i, note_block])
+            chart.chartdata.data = notes
+        if chart.charttype == 'dance-double':
+            chart.notefield = '512'
+        elif chart.charttype == 'dance-single':
+            chart.notefield = '256'
+        elif chart.charttype == 'dance-solo':
+            chart.notefield = '384'
+        elif chart.charttype == 'smx-single':
+            chart.notefield = '320'
+        elif chart.charttype == 'smx-double10' or chart.charttype == 'pump-double':
+            chart.notefield = '640'
+        else:
+            chart.notefield = '300'
+
+    context = {
+        "song": song,
+        "pack": pack,
+        "chart": charts[0],
+    }
+
+    return render(request, "test.html", context)
