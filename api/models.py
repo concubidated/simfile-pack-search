@@ -44,6 +44,7 @@ class Pack(models.Model):
     authors = models.JSONField(default=list)
     types = models.JSONField(default=list)
     style = models.JSONField(default=list)
+    packType = models.CharField(max_length=32, choices=PackStyle.choices, blank=True, null=True)
     substyle = models.CharField(max_length=32, choices=PackSubStyle.choices, blank=True, null=True)
     sync = models.CharField(max_length=32,
                             choices=PackSync.choices,
