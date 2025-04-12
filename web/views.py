@@ -144,8 +144,10 @@ def chart_list(request, songid):
 
 
     chart_types = {}
+    style_types = {}
 
     for chart in charts:
+        ### This is required for the multi level selection
         # Lets us build an organized table of chart types
         game = chart.charttype.split("-")[0]
         style = chart.charttype.split("-")[1]
@@ -154,6 +156,11 @@ def chart_list(request, songid):
         if style not in chart_types[game]:
             chart_types[game][style] = {}
         chart_types[game][style][chart.id] = chart
+
+        ### this is for single level selection
+        if chart.charttype not in style_types:
+            style_types[chart.charttype] = {}
+        style_types[chart.charttype][chart.id] = chart
 
         # lets check to see if this chart is in other packs
         common_packs = Pack.objects.filter(songs__charts__chartkey=chart.chartkey).distinct()
@@ -166,7 +173,7 @@ def chart_list(request, songid):
 
             blocks = [block.strip() for block in chart.chartdata.data.strip().split(",") if block.strip()]
             notes = []
-            for i, block in enumerate(blocks[:100]):
+            for i, block in enumerate(blocks):
                 lines = block.splitlines()
                 note_block = []
                 for line in lines:
@@ -184,6 +191,7 @@ def chart_list(request, songid):
         "charts": charts,
         "pack": pack,
         "chart_types": chart_types,
+        "style_types": style_types,
         "translit": translit,
     }
 

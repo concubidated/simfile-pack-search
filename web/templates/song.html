@@ -22,7 +22,7 @@
 }
 .render {
       width: 276px;
-      height: 300px;
+      height: 500px;
       position: relative;
       border: 1px solid #ccc;
       overflow: hidden;
@@ -54,121 +54,162 @@
       pointer-events: none; /* Let scroll events pass through */
 }
 
+.nav-link img {
+    border: 1px solid white;
+    border-radius: .375rem;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.nav-link.active img {
+    filter: invert(1);
+    border-color: white;  /* Optional: make it contrasty when active */
+    background-color: black;
+}
+
 </style>
 
 </head>
-<body class="container my-4 bg-dark text-light">
-    <h1 class="text-center">{{ song.title }}</h1>
-    <h3 class="text-center">{{ song.artist }}</h3>
+<body class="container mt-4 bg-dark text-light">
     <div class="row mb-4">
         <div class="col-md-4 text-center">
             {% if song.banner %}
                 <img class="img-fluid rounded" src="/media/images/songs/{{ song.banner }}" alt="{{ song.title }}">
             {% endif %}
-            <ul class="list-group mt-3">
-		    <li class="list-group-item bg-dark text-light"><strong>Pack:</strong><a href="/pack/{{ pack.id}}"> {{ pack.name }}</a></li>
-		{% if song.subtitle %}
-                <li class="list-group-item bg-dark text-light"><strong>Subtitle:</strong> {{ song.subtitle }}</li>
-		{% endif %}
-                <li class="list-group-item bg-dark text-light"><strong>Length:</strong> {{ song.song_length_formatted }}</li>
-		<li class="list-group-item bg-dark text-light"><strong>BPM:</strong> {{ song.bpms }}</li>
-            </ul>
         </div>
         <div class="col-md-8">
-	    <div id="render" class="render">
-	        <div id="scrollbar-notes" class="scrollbar-notes">
-		    <div id="fake-scroll" class="fake-scroll"></div>
-		</div>
-		<canvas id="notefield" width="320"></canvas>
-            </div>
-	    <div class="col-4">
-		<label for="zoom-slider">Zoom: </label>
-		<input type="range" id="zoom-slider" min="1" max="16" value="8" step=".1">
-			<span id="zoom-value">8</span>
-	    </div>
-            <div id="filterCheckboxes">
-            </div>
-            <label>
-                {% if translit %}
-                <input type="checkbox" id="toggleLanguage"> Show Translated Data
-                {% endif %}
-            </label>
+		<h3>{{ song.title }}</h3>
+		{% if song.subtitle %}
+		<h5>{{ song.subtitle }}</h5>
+		{% endif %}
+		<h5>{{ song.artist }}</h5>
+		<span>{{ song.song_length_formatted }} | {{ song.bpms }} BPM</span><br>
+		<span>Pack: <a href="/packs/{{ pack.id }}"> {{ pack.name }}</a></span>
         </div>
     </div>
 
     <div class="container mt-4 mb-4">
+	<span>AVAILABLE MODES</span>
         <!-- Top-level Tabs (Games) -->
-        <ul class="nav nav-tabs" id="gameTabs" role="tablist">
-          {% for game in chart_types %}
+        <ul class="nav bottom-border" id="styleTabs" role="tablist">
+          {% for style  in style_types %}
           <li class="nav-item" role="presentation">
-            <button class="nav-link bg-dark text-light {% if forloop.first %}active{% endif %}" id="{{ game }}-tab" data-bs-toggle="tab" data-bs-target="#{{ game }}" type="button" role="tab">{{ game }}</button>
+		<button class="nav-link bg-dark text-light p-1 ml-1 {% if forloop.first %}active{% endif %}"
+			id="{{ style }}-tab"
+			data-bs-toggle="tab"
+			data-bs-target="#{{ style }}"
+			type="button"
+			role="tab">
+		  <img width="64" class="image-thumbnail" src="/static/images/styles/{{ style }}.png" alt="{{ style }}">
+		</button>
           </li>
           {% endfor %}
         </ul>
-        <div class="tab-content pt-3" id="gameTabsContent">
-          {% for game, styles in chart_types.items %}
-          <!-- TAB PANE -->
-          <div class="tab-pane fade show {% if forloop.first %}active{% endif %}" id="{{ game }}" role="tabpanel">
-            <!-- Styles -->
-            <ul class="nav nav-tabs mb-3" id="{{ game }}StyleTabs" role="tablist">
-            {% for style in styles %}
-              <li class="nav-item" role="presentation">
-                <button class="nav-link bg-dark text-light {% if forloop.first %}active{% endif %}" id="{{ game }}-{{ style }}-tab" data-bs-toggle="tab" data-bs-target="#{{ game }}-{{ style }}" type="button" role="tab">{{ style }}</button>
-              </li>
-            {% endfor %}
-            </ul>
-            {% for style, charts in styles.items %}
-            <div class="tab-content" id="{{ game }}StyleContent">
-              <div class="tab-pane fade show {% if forloop.first %}active{% else %}{% endif %}" id="{{ game }}-{{ style }}" data-toggle="buttons" role="tabpanel" aria-labelledby="{{ game }}-single-tab">
-                <!-- Chart buttons -->
-                {% for id, chart in charts.items %} 
-                <input
-                    type="radio"
-		    class="btn-check {% if chart.difficulty == 'Easy' %}Success
-				{% elif chart.difficulty == 'Medium' %}Warning
-				{% elif chart.difficulty == 'Hard' %}Danger
-				{% elif chart.difficulty == 'Challenge'%}Primary
-				{% elif chart.difficulty == 'Edit'%}Secondary
-				{% else %}{% endif %}"
-                    name="btnradio"
-		    id="button-{{ chart.id }}"
-                    autocomplete="off"
-                    onclick="hideOthers('{{ chart.id }}')"
-		{% if forloop.first %}{% if forloop.parentloop.first %}{% if forloop.parentloop.parentloop.first %}checked{% endif %}{% endif %}{% endif %}>
-                <label class="btn btn-outline-{% if chart.difficulty == 'Easy' %}success
-				{% elif chart.difficulty == 'Medium' %}warning
-				{% elif chart.difficulty == 'Hard' %}danger
-				{% elif chart.difficulty == 'Challenge'%}primary
-				{% elif chart.difficulty == 'Edit'%}secondary
-				{% else %}info{% endif %}" for="button-{{ chart.id }}">{{ chart.difficulty }} {{ chart.meter }}</label>
-                {% endfor %}
-              </div>
-            </div>
+	<hr>
+	{% for style, charts in style_types.items %}
+ 	<div class="tab-content" id="{{ style }}StyleContent">
+          <div class="tab-pane fade show {% if forloop.first %}active{% else %}{% endif %}" id="{{ style }}" data-toggle="buttons" role="tablist" aria-labelledby="{{ style }}-tab">
+          <!-- Chart buttons -->
+          {% for id, chart in charts.items %}
+            <input
+                type="radio"
+		class="btn-check ml-1 {% if chart.difficulty == 'Easy' %}Success
+			{% elif chart.difficulty == 'Medium' %}Warning
+			{% elif chart.difficulty == 'Hard' %}Danger
+			{% elif chart.difficulty == 'Challenge'%}Primary
+			{% elif chart.difficulty == 'Edit'%}Secondary
+			{% else %}{% endif %}"
+                name="btnradio"
+		data-id="#{{ chart.id }}"
+		role="chart"
+		id="button-{{ chart.id }}"
+                autocomplete="off"
+                onclick="hideOthers('{{ chart.id }}')"
+		{% if forloop.first %}{% if forloop.parentloop.first %}checked{% endif %}{% endif %}>
+                <label class="btn btn-sm btn-outline-{% if chart.difficulty == 'Easy' %}success
+			{% elif chart.difficulty == 'Medium' %}warning
+			{% elif chart.difficulty == 'Hard' %}danger
+			{% elif chart.difficulty == 'Challenge'%}primary
+			{% elif chart.difficulty == 'Edit'%}secondary
+			{% else %}info{% endif %}" for="button-{{ chart.id }}">{{ chart.difficulty }} {{ chart.meter }}</label>
             {% endfor %}
           </div>
-          {% endfor %}
         </div>
+	{% endfor %}
       </div>
 
-<div id="chart-details">
+<div id="chart-details" class="row bg-dark">
     {% for chart in charts %}
         <div 
             id="collapse-{{ chart.id }}"
-	        class="collapse {% if forloop.first %}show{% endif %} mb-2"
+	    class="col-6 collapse {% if forloop.first %}show{% endif %} mb-2"
         >
-            <div class="container bg-dark">
-                <div class="row">
-                    <div class="col-8">
 			<span>Peak Notes/Second: {{ chart.npspeak|floatformat:2}}</span>
                         <canvas class="mb-4" id="chart-{{ chart.id }}" style="display: block; box-sizing: border-box; height: 200px; width: 500px;"></canvas>
-
+			<div class="col-4">
 			<table class="mb-4 table table-sm table-borderless table-dark">
 			<tr>
-				<td>Chart Key</td>
-				<td>{{ chart.chartkey}}</td>
+				<td>Chart Author:</td>
+				<td>{{ chart.author}}</td>
 			</tr>
 			</table>
+			</div>
 
+			<div class="row">
+			  <div class="col-md-4">
+			    <table class="table table-sm table-dark">
+			      <tr>
+			        <td>Total Notes</td>
+				<td>{{ chart.taps.total }}</td>
+			      </tr>
+			      <tr>
+			        <td>Taps</td>
+				<td>{{ chart.taps.taps }}</td>
+			      </tr>
+			      <tr>
+			        <td>Jumps</td>
+				<td>{{ chart.taps.jumps }}</td>
+			      </tr>
+			      <tr>
+			        <td>Holds</td>
+				<td>{{ chart.taps.holds }}</td>
+			      </tr>
+			      <tr>
+			        <td>Mines</td>
+				<td>{{ chart.taps.mines }}</td>
+			      </tr>
+			    </table>
+			  </div>
+			  <div class="col-md-4">
+			  <table class="table table-sm table-dark">
+			      <tr>
+			        <td>&nbsp;</td>
+			      </tr>
+			      <tr>
+			        <td>Hands</td>
+				<td>{{ chart.taps.hands }}</td>
+			      </tr>
+			      <tr>
+			        <td>Rolls</td>
+				<td>{{ chart.taps.rolls }}</td>
+			      </tr>
+			      <tr>
+			        <td>Lifts</td>
+				<td>{{ chart.taps.lifts }}</td>
+			      </tr>
+			      <tr>
+			        <td>Fakes</td>
+				<td>{{ chart.taps.fakes }}</td>
+			      </tr>
+			    </table>
+			    </div>
+			</div>
+			<table class="table table-sm table-borderless table-dark">
+			<tr>
+				<td>Chart Key</td>
+				<td>{{ chart.chartkey }}</td>
+			</tr>
+			</table>
 			<hr>
 			{% if chart.common_packs.count > 1 %}
 			<span>Other Packs</span>
@@ -187,22 +228,28 @@
 			{% else %}
 			<span>Not found on any other packs</span>
 			{% endif %}
-		    </div>
-		    <div class="col-4">
-			<span>Chart Author: {{ chart.author }}</span>
-			<table class="table table-sm table-dark">
-			{% for key, value in chart.taps.items %}
-			<tr>
-				<td class="text-capitalize"><strong>{{ key }}</strong></td>
-				<td>{{ value }}</td>
-			</tr>
-			{% endfor %}
-			</table>
-                    </div>
-                </div>
-            </div>
-        </div>
+	</div>
     {% endfor %}
+<div class="col-4">
+	    <div id="render" class="render">
+	        <div id="scrollbar-notes" class="scrollbar-notes">
+		    <div id="fake-scroll" class="fake-scroll"></div>
+		</div>
+		<canvas id="notefield" width="276"></canvas>
+            </div>
+	    <div class="col-4">
+		<label for="zoom-slider">Zoom: </label>
+		<input type="range" id="zoom-slider" min="1" max="16" value="8" step=".1">
+			<span id="zoom-value">8</span>
+	    </div>
+            <div id="filterCheckboxes">
+            </div>
+            <label>
+                {% if translit %}
+                <input type="checkbox" id="toggleLanguage"> Show Translated Data
+                {% endif %}
+            </label>
+</div>
 </div>
 
 <script>
@@ -312,6 +359,18 @@ $('#zoom-slider').on('input', function() {
 </script>
 
 <script>
+
+function checkHashOnLoad() {
+    const fragment = window.location.hash.replace('#', ''); // remove the `#`
+    if (fragment) {
+        hideOthers(fragment); // call your function with the ID
+	const $button = $(`#button-${fragment}`);
+	if ($button.length) {
+		$button.prop('checked', true);
+	}
+    }
+}
+
 $( document ).ready(function() {
     {% for chart in charts %}
         const ctx{{ chart.id }} = document.getElementById('chart-{{ chart.id }}');
@@ -325,6 +384,15 @@ $( document ).ready(function() {
     	drawNoteField(chartData, zoom);
     {% endwith %}
 
+    var url = window.location.href;
+
+    checkHashOnLoad()
+
+    $('input[role="chart"]').on('click', function() {
+      const hash = $(this).attr('data-id');
+      const newUrl = url.split('#')[0] + hash;
+      history.replaceState(null, null, newUrl);
+    });
 });
 
 function createChart(ctx, data) {
