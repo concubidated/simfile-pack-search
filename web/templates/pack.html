@@ -25,6 +25,10 @@
                 <li class="list-group-item bg-dark text-light"><strong>Number of Songs:</strong> {{ pack.song_count }}</li>
                 <li class="list-group-item bg-dark text-light"><strong>Number of Charts:</strong> {{ chart_info.count }}</li>
                 <li class="list-group-item bg-dark text-light"><strong>Difficulty Range:</strong> {{ chart_info.min_meter }} - {{ chart_info.max_meter }}</li>
+		<li class="list-group-item bg-dark text-light"><strong>Pack Type:</strong>{% if pack.packType == "itg" or pack.packType == "ddr "%} Pad ({{pack.packType}}){% else %}{{ pack.packType }}{% endif %}</li>
+		{% if pack.substyle %}<li class="list-group-item bg-dark text-light"><strong>Substyle:</strong> {{ pack.substyle }}</li> {% endif %}
+		{% if pack.extras %}<li class="list-group-item bg-dark text-light"><strong>Contains Extras</strong></li>{% endif %}
+					{% if pack.source %}<li class="list-group-item bg-dark text-light"><strong>Source:</strong> {{ pack.source }}</li>{% endif %}
                 <li class="list-group-item bg-dark text-light"><a href="/media/packs/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a><br><strong><a href="mirrorlink/simfiles/{{ pack.name }}.zip">Mirror</a></strong></li>
             </ul>
         </div>
