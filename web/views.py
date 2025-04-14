@@ -84,29 +84,42 @@ def pack_list(request):
 
 def pack(request, packid):
     """list all the songs in a pack"""
-    charts_qs = Chart.objects.only("meter", "difficulty", "charttype")
-
+    charts_qs = (
+        Chart.objects
+        .only("meter", "difficulty", "charttype", "song_id")
+        .select_related("song")  # load song to avoid lazy song access per chart
+    )
     songs = (
-        Song.objects.prefetch_related(
+        Song.objects
+        .filter(pack_id=packid)
+        .select_related("pack")  # fetch pack in same query
+        .prefetch_related(
             Prefetch("charts", queryset=charts_qs)
         )
-        .filter(pack=packid)
-        .select_related("pack")
         .annotate(
             min_meter=Min("charts__meter"),
             max_meter=Max("charts__meter")
         )
-        .only("id", "title", "artist", "banner", "pack__name", "pack__id")
+        .only("id", "title", "subtitle", "artist", "bpms", "credit", "banner", "songlength", 
+              "titletranslit", "subtitletranslit", "artisttranslit",
+              "pack__id", "pack__name")
         .order_by("title")
-        )
+    )
 
-    parent_pack = Pack.objects.filter(id=packid).annotate(song_count=Count('songs')).first()
+    # Fetch the pack along with song count in one shot
+    parent_pack = (
+        Pack.objects
+        .filter(id=packid)
+        .annotate(song_count=Count("songs"))
+        .first()
+    )
+
     charts = (
         Chart.objects
-        .filter(song__pack=packid)
-        .values('meter')
-        .annotate(count=Count('id'))
-        .order_by('meter')
+        .filter(song__pack_id=packid)
+        .values("meter")
+        .annotate(count=Count("id"))
+        .order_by("meter")
     )
 
     chart_info = {'count': 0}
@@ -274,7 +287,7 @@ def list_all_songs(request):
                 min_meter=Min("charts__meter"),
                 max_meter=Max("charts__meter")
             )
-            .only("id", "title", "artist", "banner", "pack__name", "pack__id")
+            .only("id", "title", "subtitle", "artist", "credit", "banner", "pack__name", "pack__id", "pack__banner")
             .order_by("title")
         )
 
