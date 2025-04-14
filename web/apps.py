@@ -1,4 +1,4 @@
-"""web appconfig"""
+"""web app config"""
 from django.apps import AppConfig
 
 class WebConfig(AppConfig):
