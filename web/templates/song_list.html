@@ -1,68 +1,62 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Song List</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+{% extends 'base.html' %}
+{% load static %}
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-
-    {% load static %}
-
-</head>
-<body class="container my-4">
+{% block title %}Song List{% endblock %}
+{% block content %}
+<body class="container my-4 bg-dark text-light">
 
     <h1 class="text-center mb-4">Song List</h1>
 
     <div class="table-responsive">
-    <table id="songTable" class="table table-striped table-hover table-bordered">
+    <table id="songTable" class="table table-striped table-hover table-bordered table-dark">
         <thead class="table-dark">
-            <tr>
+        <tr>
 		<th></th>
-                <th>Title</th>
-                <th>Artist</th>
-		<td>Pack Name</th>
-		<td>Style(s)</td>
-		<td>Meter Range</td>
+        <th>Title</th>
+        <th>Artist</th>
+		<th>Pack Name</th>
+		<th>Chart Author(s)</th>
+		<th>Style(s)</th>
+		<th>Meter Range</th>
             </tr>
         </thead>
         <tbody>
             {% for song in songs %}
-                <tr>
-		    <td>{% if song.banner  %}<img class="img-fluid rounded" style="max-height:100px;" src="/media/images/songs/{{ song.banner }}">
-			{% elif song.pack.banner %}<img style="max-height:100px;" class="img-fluid rounded" src="/media/images/packs/{{ song.pack.banner }}">
-			{% endif %}
-		    </td>
-		    <td class="small"><a href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></td>
-                    <td class="small">{{ song.artist|slice:":64" }}</td>
-		    <td width="150px" class="small"><a href="/pack/{{ song.pack.id }}">{{ song.pack.name }}</a></td>
-		    <td width="150px">{% if song.charts.all %}{% load filters %}
-			    {% for chart in song.charts.all|charttypes %}
-			    <img class="img-fluid d-inline-block me-2" style="max-width: 50px; filter: invert(1);" src="{% static 'images/'|add:chart|add:'.png' %}" alt="{{ chart }}">
-			{% endfor %}{% endif %}
-		    </td>
-		    <td class="small">
-                            {% if song.charts.all %}
-			    	{% if song.min_meter != song.max_meter %}
-			    		{{ song.min_meter }}-{{ song.max_meter }}
-				{% else %}
-					{{ song.min_meter }}
-				{% endif %}
-                            {% else %}
-                                <span class="text-muted">No charts available</span>
-                            {% endif %}
-                        </td>
-                </tr>
-            {% empty %}
+            <tr>
+                <td width="150px" class="text-center">{% if song.banner %}<img loading="lazy" class="img-fluid rounded" style="max-height:100px;" src="/media/images/songs/{{ song.banner }}">
+                    {% elif song.pack.banner %}<img loading="lazy" style="max-height:100px;" class="img-fluid rounded" src="/media/images/packs/{{ song.pack.banner }}">
+                    {% else %}<img loading="lazy" class="img-fluid rounded" style="max-height:100px;" src="/media/images/packs/nobanner.png">{% endif %}
+                </td>
+                <td class="small"><a href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></td>
+                <td class="small">{{ song.artist|slice:":64" }}</td>
+                <td width="150px" class="small"><a href="/pack/{{ song.pack.id }}">{{ song.pack.name }}</a></td>
+                <td width="150px" class="small">{% for credit in song.credit %}{{ credit }}<br>{% endfor %}</a></td>
+                <td width="150px">{% if song.charts.all %}{% load filters %}
+                    {% for chart in song.charts.all|charttypes %}
+                    <img class="img-fluid d-inline-block me-2" style="max-width: 50px;" src="{% static 'images/styles/'|add:chart|add:'.png' %}" alt="{{ chart }}">
+                {% endfor %}{% endif %}
+                </td>
+                <td class="small">
+                {% if song.charts.all %}
+                    {% if song.min_meter != song.max_meter %}
+                        {{ song.min_meter }}-{{ song.max_meter }}
+                    {% else %}
+                        {{ song.min_meter }}
+                    {% endif %}
+                {% else %}
+                    <span class="text-muted">No charts available</span>
+                {% endif %}
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
 
 </body>
-</html>
 
+{% endblock content%}
+
+{% block scripts %}
 <script>
     $(document).ready(function() {
         $('#songTable').DataTable({
@@ -84,3 +78,4 @@
         });
     });
 </script>
+{% endblock scripts %}

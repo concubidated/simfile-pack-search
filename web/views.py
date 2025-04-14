@@ -1,5 +1,6 @@
 """web views"""
 import re, json
+from collections import OrderedDict
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
 from django.shortcuts import render, redirect
@@ -20,7 +21,7 @@ def search(request, search_type=None, search_query=None):
         return redirect(f"/search/{search_type}/{search_query}")
 
 
-    valid_types = ["title", "artist", "credit"]
+    valid_types = ["title", "artist", "credit", "pack"]
     if search_type not in valid_types:
         return redirect("/")
 
@@ -59,6 +60,17 @@ def search(request, search_type=None, search_query=None):
                 max_meter=Max("charts__meter")
             )
             .filter(credit__icontains=search_query))
+    elif "pack" in search_type:
+        songs = (
+            Song.objects.prefetch_related(
+                Prefetch("charts", queryset=charts_qs)
+            )
+            .select_related("pack")
+            .annotate(
+                min_meter=Min("charts__meter"),
+                max_meter=Max("charts__meter")
+            )
+            .filter(pack__name__icontains=search_query))
     else:
         redirect("/")
 
@@ -126,6 +138,7 @@ def pack(request, packid):
 
     return render(request, "pack.html",  context)
 
+@cache_page(timeout=None) 
 def song_list(request, packid):
     """list all the songs in a pack"""
     songs = Song.objects.filter(pack=packid).order_by("title")
@@ -136,7 +149,6 @@ def chart_list(request, songid):
     charts = Chart.objects.filter(song=songid).select_related('chartdata').order_by("meter")
     song = Song.objects.get(id=songid)
     pack = Pack.objects.get(id=song.pack.id)
-
 
     translit = any(getattr(song, field) for field in [
         "titletranslit", "artisttranslit", "subtitletranslit"
@@ -166,6 +178,13 @@ def chart_list(request, songid):
         common_packs = Pack.objects.filter(songs__charts__chartkey=chart.chartkey).distinct()
         chart.common_packs = common_packs
 
+        # calculate average notes per second
+        if chart.npsgraph:
+            nps_data = json.loads(chart.npsgraph)
+            if len(nps_data) > 0:
+                chart.npsavg = sum(nps_data) / len(nps_data)
+            
+
         # Organize chartData for chartviewer.js
         if hasattr(chart, 'chartdata'):
             # Strip the measure comments some charts have
@@ -184,7 +203,41 @@ def chart_list(request, songid):
             chart.chartdata.data = notes
 
             # Notefield width for each chart
-            chart.notefield_width = 64 * column_count
+            chart.notefield_width = 32 * column_count
+
+
+    # lets presort the dict and give priority to common game types.
+    # Define custom priority
+    priority_order = ["dance-single", "dance-double", "dance-solo", "dance-couple",
+                      "dance-threepanel",
+                      "pump-single", "pump-double", "pump-halfdouble",
+                      "smx-single", "smx-double6", "smx-double10",
+                      "techno-single9", "techno-double9"]
+
+    def sort_key(charttype):
+        try:
+            # return (rank, charttype) — charttype used to sort subtypes
+            return (priority_order.index(charttype), charttype)
+        except ValueError:
+            # Unlisted types come after, sorted alphabetically
+            return (len(priority_order), charttype)
+
+    # Sort the outer dict
+    style_types = OrderedDict(
+        sorted(style_types.items(), key=lambda item: sort_key(item[0]))
+    )
+
+    def chart_sort_key(chart):
+        try:
+            return (priority_order.index(chart.charttype), chart.charttype)
+        except ValueError:
+            return (len(priority_order), chart.charttype)
+
+    charts = sorted(charts, key=chart_sort_key)
+
+
+
+    print(style_types)
 
     context = {
         "song": song,
@@ -207,7 +260,7 @@ def main(request):
 
     return render(request, "main.html", context)
 
-#@cache_page(60 * 60 * 24)  # Cache the view for 1 day
+#@cache_page(timeout=None)  # Cache the view for 1 day
 def list_all_songs(request):
     """list all songs will query all songs and charts"""
     cache_key = "all_songs"
@@ -215,14 +268,16 @@ def list_all_songs(request):
     songs = cache.get(cache_key)
 
     if not songs:
-        # Efficiently load songs with related charts and their meter range
-        charts_qs = Chart.objects.only("meter", "difficulty", "charttype")
+        # Only fetch needed fields for charts
+        charts_qs = Chart.objects.only("meter", "difficulty", "charttype", "song_id")
 
+        # Main query
         songs = (
-            Song.objects.prefetch_related(
+            Song.objects
+            .select_related("pack")  # Pull pack in same query
+            .prefetch_related(
                 Prefetch("charts", queryset=charts_qs)
             )
-            .select_related("pack")
             .annotate(
                 min_meter=Min("charts__meter"),
                 max_meter=Max("charts__meter")

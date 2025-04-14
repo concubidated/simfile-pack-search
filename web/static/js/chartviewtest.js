@@ -1,49 +1,55 @@
 const rotates = {
 	'dance-single': [90, 0, 180, 270],
 	'dance-double': [90, 0, 180, 270, 90, 0, 180, 270],
+	'dance-couple': [90, 0, 180, 270, 90, 0, 180, 270],
 	'dance-solo': [90, 135, 0, 180, 225, 270],
+	'dance-threepanel': [135, 0, 225],
 	'smx-single': [90, 0, 0, 180, 270],
+	'smx-double6': [90, 0, 270, 90, 0, 270],
 	'smx-double10': [90, 0, 0, 180, 270, 90, 0, 0, 180, 270],
 	'pump-single': [45, 135, 0, 225, 315],
-	'pump-double': [45, 135, 0, 225, 315, 45, 135, 0, 225, 315]
+	'pump-double': [45, 135, 0, 225, 315, 45, 135, 0, 225, 315],
+	'techno-single9': [45, 90, 135, 0, 0, 180, 225, 270, 315],
+	'techno-double9':  [45, 90, 135, 0, 0, 180, 225, 270, 315, 45, 90, 135, 0, 0, 180, 225, 270, 315] 
 }
-var size = 64, zoom = 10;
+var size=32, zoom=8;
 function render($canvas, notes, zoom=8, style='dance-single') {
     style = rotates[style] ? style : "dance-single";
     var columnCount = rotates[style].length;
     const holds = new Array(columnCount).fill(false);
     var startMeasure = notes[0][0];
+    var beatBarLength = columnCount * size;
     var end = notes[notes.length - 1][0] + 1;
     var margin = ($canvas.width() - (columnCount * size)) / 2;
     $canvas.clearCanvas().prop("height", Math.min(32767, ((end - startMeasure) * size * zoom) + size));
     for (var i = startMeasure; i <= end; i++) {
         $canvas.drawLine({
             strokeStyle: "#333",
-            strokeWidth: 2,
+            strokeWidth: 1,
             x1: 0,
             y1: ((i - startMeasure) * size * zoom) + (size / 2),
-            x2: 640,
+            x2: beatBarLength,
             y2: ((i - startMeasure) * size * zoom) + (size / 2)
         }).drawLine({
             strokeStyle: "#999",
-            strokeWidth: 2,
+            strokeWidth: 1,
             x1: 0,
             y1: ((i - startMeasure - 0.5) * size * zoom) + (size / 2),
-            x2: 640,
+            x2: beatBarLength,
             y2: ((i - startMeasure - 0.5) * size * zoom) + (size / 2)
         }).drawLine({
             strokeStyle: "#ccc",
-            strokeWidth: 2,
+            strokeWidth: 1,
             x1: 0,
             y1: ((i - startMeasure - 0.25) * size * zoom) + (size / 2),
-            x2: 640,
+            x2: beatBarLength,
             y2: ((i - startMeasure - 0.25) * size * zoom) + (size / 2)
         }).drawLine({
             strokeStyle: "#ccc",
-            strokeWidth: 2,
+            strokeWidth: 1,
             x1: 0,
             y1: ((i - startMeasure - 0.75) * size * zoom) + (size / 2),
-            x2: 640,
+            x2: beatBarLength,
             y2: ((i - startMeasure - 0.75) * size * zoom) + (size / 2)
         });
     }
@@ -70,12 +76,20 @@ function render($canvas, notes, zoom=8, style='dance-single') {
                         });
                     break;
                     case "1": // step
-			var imagePath = "/static/images/chartview/notes.png"
+			            var imagePath = "/static/images/chartview/notes.png"
                         if (style.includes("smx") || style.includes("pump")) {
-			    if (k == 2 || k == 7){
+			                if (style.includes("double6")) {
+				                if (k ==1 || k ==4 ){
+					                imagePath = "/static/images/chartview/center.png";
+				                }
+			                } else if (k == 2 || k == 7){
                                 imagePath = "/static/images/chartview/center.png";
-			    }
-			}
+			                }
+			            } else if (style.includes("techno")) {
+			                if (k == 4 || k == 13) {
+				                imagePath = "/static/images/chartview/center.png";
+			                }
+			            }
                         $canvas.drawImage({
                             source: imagePath,
                             x: (k * size) + margin,
@@ -96,19 +110,30 @@ function render($canvas, notes, zoom=8, style='dance-single') {
                         holds[k] = [bar, j, dirs.length];
                         break;
                     case "3": // hold/roll stop
-			var notesImg = "/static/images/chartview/notes.png";
-			var holdImg = "/static/images/chartview/hold.png";
-			var holdEndImg = "/static/images/chartview/hold-end.png";
+                        var notesImg = "/static/images/chartview/notes.png";
+                        var holdImg = "/static/images/chartview/hold.png";
+                        var holdEndImg = "/static/images/chartview/hold-end.png";
                         if (style.includes("smx") || style.includes("pump")) {
-			    if (k == 2 || k == 7){
-				notesImg = "/static/images/chartview/center.png";
-                                holdImg = "/static/images/chartview/center-hold.png";
-				holdEndImg = "/static/images/chartview/center-hold-end.png";
-			    }
-			}
+                            if (style.includes("double6")) {
+                                if (k ==1 || k ==4 ){
+                                notesImg = "/static/images/chartview/center.png";
+                                                holdImg = "/static/images/chartview/center-hold.png";
+                                holdEndImg = "/static/images/chartview/center-hold-end.png";
+                                }
+                            } else if (k == 2 || k == 7){
+                                notesImg = "/static/images/chartview/center.png";
+                                                holdImg = "/static/images/chartview/center-hold.png";
+                                holdEndImg = "/static/images/chartview/center-hold-end.png";
+                                }
+                        }
                         var hBar = holds[k][0];
                         var hJ = holds[k][1];
                         var hDirsLength = holds[k][2];
+                        if (hJ === undefined){
+                            hJ = 1;
+                            hBar = 1;
+                            hDirsLength = 1;
+                        }
                         var hPos = hBar + (hJ / hDirsLength);
                         $canvas.drawImage({
                             source: holdImg,

@@ -1,23 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Song List</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+{% extends 'base.html' %}
+{% load static %}
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+{% block title %}Song List{% endblock %}
+{% block content %}
+<body class="container my-4">
 
-    {% load static %}
-
-</head>
-<body class="container my-4 bg-dark text-light">
-
-    <h1 class="text-center mb-4">Song List</h1>
-
+    {% include 'components/search-bar.html' %}
+    
     <div class="table-responsive">
-    <table id="songTable" class="table table-striped table-hover table-bordered table-dark">
+    <table id="songTable" class="table table-striped table-hover table-bordered">
         <thead class="table-dark">
         <tr>
 		<th></th>
@@ -30,45 +21,52 @@
             </tr>
         </thead>
         <tbody>
+            {% load filters %}
             {% for song in songs %}
-                <tr>
-		    <td>{% if song.banner  %}<img class="img-fluid rounded" style="max-height:100px;" src="/media/images/songs/{{ song.banner }}">
-			{% elif song.pack.banner %}<img style="max-height:100px;" class="img-fluid rounded" src="/media/images/packs/{{ song.pack.banner }}">
-			{% endif %}
-		    </td>
-		    <td class="small"><a href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></td>
-            <td class="small">{{ song.artist|slice:":64" }}</td>
-            <td width="150px" class="small"><a href="/pack/{{ song.pack.id }}">{{ song.pack.name }}</a></td>
-            <td width="150px" class="small">{% for credit in song.credit %}{{ credit }}<br>{% endfor %}</a></td>
-            <td width="150px">{% if song.charts.all %}{% load filters %}
-			    {% for chart in song.charts.all|charttypes %}
-			    <img class="img-fluid d-inline-block me-2" style="max-width: 50px; filter: invert(1);" src="{% static 'images/'|add:chart|add:'.png' %}" alt="{{ chart }}">
-			{% endfor %}{% endif %}
-		    </td>
-		    <td class="small">
-                            {% if song.charts.all %}
-			    	{% if song.min_meter != song.max_meter %}
-			    		{{ song.min_meter }}-{{ song.max_meter }}
-				{% else %}
-					{{ song.min_meter }}
-				{% endif %}
-                            {% else %}
-                                <span class="text-muted">No charts available</span>
-                            {% endif %}
-                        </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="4" class="text-center">No songs available.</td>
-                </tr>
+            <tr>
+                <td class="text-center">{% if song.banner %}<img loading="lazy" class="img-fluid rounded" style="max-height:100px;" src="/media/images/songs/{{ song.banner }}">
+                    {% elif song.pack.banner %}<img loading="lazy" style="max-height:100px;" class="img-fluid rounded" src="/media/images/packs/{{ song.pack.banner }}">
+                    {% else %}<img loading="lazy" class="img-fluid rounded" style="max-height:100px;" src="/media/images/packs/nobanner.png">{% endif %}
+
+                </td>
+                <td class="small"><a href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></td>
+                <td class="small">{{ song.artist|slice:":64" }}</td>
+                <td width="150px" class="small"><a href="/pack/{{ song.pack.id }}">{{ song.pack.name }}</a></td>
+                <td width="150px" class="small">{% for credit in song.credit %}{{ credit }}<br>{% endfor %}</a></td>
+                <td data-sort="{{ song.charts.all|charttypes }}" width="150px">{% if song.charts.all %}{% load filters %}
+                    {% for chart in song.charts.all|charttypes %}
+                    <img data-bs-toggle="tooltip" data-bs-placement="top" title="{{ chart }}"  class="img-fluid d-inline-block me-2" style="max-width: 50px;" src="{% static 'images/styles/'|add:chart|add:'.png' %}" alt="{{ chart }}">
+                {% endfor %}{% endif %}
+                </td>
+                <td class="small">
+                {% if song.charts.all %}
+                    {% if song.min_meter != song.max_meter %}
+                        {{ song.min_meter }}-{{ song.max_meter }}
+                    {% else %}
+                        {{ song.min_meter }}
+                    {% endif %}
+                {% else %}
+                    <span class="text-muted">No charts available</span>
+                {% endif %}
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
 
 </body>
-</html>
 
+{% endblock content%}
+
+{% block scripts %}
 <script>
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl, {
+        delay: { show: 0, hide: 100 }
+    });
+});
+
     $(document).ready(function() {
         $('#songTable').DataTable({
             paging: true,         // Enable pagination
@@ -87,5 +85,47 @@
                 }
             }
         });
+
+    var table = $('#songTable').DataTable();
+
+    // Track active filters
+    let activeFilters = [];
+
+    // Custom filter logic for JSON data-sort field
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+        var jsonTypeData = $(table.row(dataIndex).node()).find('td:eq(5)').data('sort');
+
+        try {
+            var packTypes = JSON.parse(jsonTypeData.replace(/'/g, '"')); // Convert to valid JSON format
+        } catch (e) {
+            console.error('Invalid JSON data-sort:', jsonTypeData);
+            return false; // Skip if JSON parsing fails
+        }
+
+        // Show all rows if no filters are active
+        if (activeFilters.length === 0) {
+            return true;
+        }
+
+        // Check for any active filter match
+        return activeFilters.some(filter =>
+            packTypes.some(type => type.includes(filter))
+        );
     });
+
+    // Checkbox change logic
+    $('#filterCheckboxes .filter-checkbox').on('change', function () {
+        const filterValue = $(this).val();
+
+        if (this.checked) {
+            activeFilters.push(filterValue);
+        } else {
+            activeFilters = activeFilters.filter(f => f !== filterValue); // Remove if unchecked
+        }
+
+        table.draw(); // Redraw the table with updated filters
+    });
+});
+
 </script>
+{% endblock scripts %}
