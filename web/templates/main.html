@@ -9,8 +9,8 @@
     
     {% include 'components/search-bar.html' %}
 
-    <table id="packTable" class="table table-striped table-hover table-bordered table-dark">
-        <thead class="table-dark">
+    <table id="packTable" class="table table-striped table-hover table-bordered">
+        <thead class="">
         <tr>
             <th class="no-sort"></th>
             <th>Pack</th>
@@ -37,7 +37,7 @@
             </td>
             <td class="small">{% if pack.authors|length > 4 %}Various{% else %}{% for author in pack.authors %}{{ author }}<br>{% endfor %}{% endif %}</td>
             <td class="small">{{ pack.date_scanned|date:"Y-m-d" }}</td>
-            <td class="text-center"><a href="/downloads/packs/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a></td>
+            <td class="text-center"><a href="http://mirror.reenigne.net/simfiles/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a></td>
             <td data-sort="{{ pack.style }}"></td>
         </tr>
 	    {% empty %}

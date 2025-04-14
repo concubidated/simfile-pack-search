@@ -3,11 +3,13 @@
 {% block title %}{{ song.title }} - {{ song.artist }}{% endblock %}
 {% block content %}
 
-<body class="container mt-4 bg-dark text-light">
+<body class="container mt-4">
     <div class="row mb-4">
         <div class="col-12 col-md-4 text-center">
             {% if song.banner %}
-                <img class="shadow border mb-5 img-fluid" src="/media/images/songs/{{ song.banner }}" alt="{{ song.title }}">
+                <img class=" shadow border mb-5 img-fluid" src="/media/images/song/{{ song.banner }}" alt="{{ song.title }}">
+            {% elif song.pack.banner %}<img class="shawdow border mb-5 img-fluid" src="/media/images/packs/{{ song.pack.banner }}">
+                {% else %}<img loading="lazy" class=" shawdow border mb-5 img-fluid" src="/media/images/packs/nobanner.png"></td>
             {% endif %}
         </div>
         <div class="col-12 col-md-8">
@@ -35,7 +37,7 @@
                 <ul class="nav bottom-border" id="styleTabs" role="tablist">
                 {% for style  in style_types %}
                 <li class="nav-item" role="presentation">
-                <button class="nav-link bg-dark text-light p-1 ml-1 {% if forloop.first %}active{% endif %}"
+                <button class="nav-link p-1 ml-1 {% if forloop.first %}active{% endif %}"
                     id="{{ style }}-tab"
                     data-bs-toggle="tab"
                     data-bs-target="#{{ style }}"
@@ -80,7 +82,7 @@
         </div>
     </div>
 
-<div id="chart-details" class="row bg-dark">
+<div id="chart-details" class="row">
     {% for chart in charts %}
     <div 
         id="collapse-{{ chart.id }}"
@@ -90,21 +92,21 @@
 			<span>Peak: {{ chart.npspeak|floatformat:2}}</span><br>
             <span>Average: {{ chart.npsavg|floatformat:2}}</span>
 
-			<div class="ratio ratio-21x9">
+			<div class="ratio ratio-21x9 mb-4">
                             <canvas class="mb-4 w-100 h-100" id="chart-{{ chart.id }}" style="display: block; box-sizing: border-box;"></canvas>
 			</div>
 			<div class="col-12 col-md-6">
-			<table class="mb-4 table table-sm table-borderless table-dark">
+			<table class="mb-4 table table-sm table-borderless">
 			<tr>
-				<td>Chart Author:</td>
+				<td>Chart Author</td>
 				<td>{{ chart.author}}</td>
 			</tr>
 			</table>
 			</div>
 
 			<div class="row">
-			  <div class="col-6 col-md-4">
-			    <table class="table table-sm table-dark">
+			  <div class="col-6 col-md-6">
+			    <table class="table table-sm">
 			      <tr>
 			        <td>Total Notes</td>
 				<td>{{ chart.taps.total }}</td>
@@ -127,8 +129,8 @@
 			      </tr>
 			    </table>
 			  </div>
-			  <div class="col-6 col-md-4">
-			  <table class="table table-sm table-dark">
+			  <div class="col-6 col-md-6">
+			  <table class="table table-sm">
 			      <tr>
 			        <td>&nbsp;</td>
 			      </tr>
@@ -151,8 +153,8 @@
 			    </table>
 			    </div>
 			</div>
-            <div class="col-12 col-md-6">
-			<table class="table table-sm table-borderless table-dark">
+            <div class="col-12 col-md-12">
+			<table class="table table-sm table-borderless">
 			<tr>
 				<td>Chart Key</td>
 				<td>{{ chart.chartkey }}</td>
@@ -162,7 +164,7 @@
 			<hr>
 			{% if chart.common_packs.count > 1 %}
 			<span>Other Packs</span>
-			<table class="table table-sm table-dark">
+			<table class="table table-sm">
                             {% for common_pack in chart.common_packs %}
 			    <tr>
                             {% if common_pack.id != pack.id %}
