@@ -138,7 +138,6 @@ def pack(request, packid):
 
     return render(request, "pack.html",  context)
 
-@cache_page(timeout=None) 
 def song_list(request, packid):
     """list all the songs in a pack"""
     songs = Song.objects.filter(pack=packid).order_by("title")
@@ -153,7 +152,6 @@ def chart_list(request, songid):
     translit = any(getattr(song, field) for field in [
         "titletranslit", "artisttranslit", "subtitletranslit"
     ])
-
 
     chart_types = {}
     style_types = {}
@@ -184,7 +182,6 @@ def chart_list(request, songid):
             if len(nps_data) > 0:
                 chart.npsavg = sum(nps_data) / len(nps_data)
             
-
         # Organize chartData for chartviewer.js
         if hasattr(chart, 'chartdata'):
             # Strip the measure comments some charts have
@@ -204,7 +201,6 @@ def chart_list(request, songid):
 
             # Notefield width for each chart
             chart.notefield_width = 32 * column_count
-
 
     # lets presort the dict and give priority to common game types.
     # Define custom priority
@@ -234,10 +230,6 @@ def chart_list(request, songid):
             return (len(priority_order), chart.charttype)
 
     charts = sorted(charts, key=chart_sort_key)
-
-
-
-    print(style_types)
 
     context = {
         "song": song,
