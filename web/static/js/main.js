@@ -77,6 +77,7 @@ function drawNoteField(chart, zoom) {
     });
 }
 
+/**
 function setTheme (mode = 'auto') {
     const userMode = localStorage.getItem('bs-theme');
     const sysMode = window.matchMedia('(prefers-color-scheme: light)').matches;
@@ -97,3 +98,4 @@ function setTheme (mode = 'auto') {
   setTheme();
   document.querySelectorAll('.mode-switch .btn').forEach(e => e.addEventListener('click', () => setTheme(e.id)));
   window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => setTheme());
+**/
