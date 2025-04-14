@@ -113,4 +113,3 @@ class ChartData(models.Model):
 
     def __str__(self):
         return f"Notedata for {self.chart.__str__()}"
-

@@ -10,11 +10,12 @@ import shutil
 import zipfile
 import hashlib
 import logging
-import chardet
 import subprocess
+import sys
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
+import chardet
 import humanize
 import lz4.block
 import imageio.v3 as iio
@@ -33,7 +34,7 @@ from api.management.scripts import sqlite_query, data_import, chart_parse
 working_path = os.getenv('OUTFOX_WORKING_PATH', './working')
 outfox_song_path = os.path.join(working_path, 'Songs')
 outfox_cache_path = os.path.join(working_path, 'Cache')
-docker_path = "registry.digitalocean.com/outfox-containers/cache-builder"
+DOCKER_PATH = "registry.digitalocean.com/outfox-containers/cache-builder"
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ def convert_video_to_gif_2(banner_path):
 
     colors = 256
     target_fps = 10
-    width, height = meta["size"]
+    width, _ = meta["size"]
 
     resize_factor = 1.0
     if width > 512:  # Resize large banners
@@ -191,7 +192,7 @@ def convert_video_to_gif_2(banner_path):
         #print(f"GIF saved: {banner_path}")
     else:
         print(f"GIF has no frames: {banner_path}")
-        exit()
+        sys.exit()
 
 def optimize_gif(banner_path):
     """Run gifsicle to reduce the size"""
@@ -326,7 +327,7 @@ class Command(BaseCommand):
                                         #"--user", "1000:1000",
                                         "-v", f"{outfox_cache_path}:/outfox/Cache",
                                         "-v", f"{outfox_song_path}:/outfox/Songs",
-                                        docker_path],
+                                        DOCKER_PATH],
                                         stdout=subprocess.DEVNULL,
                                         #stderr=subprocess.DEVNULL,
                                         check=False
@@ -420,7 +421,8 @@ class Command(BaseCommand):
             pack.save()
 
 
-            # Before we remove the packs lets parse out the actual notedata and save it from sm or ssc files
+            # Before we remove the packs lets parse out the
+            # actual notedata and save it from sm or ssc files
             charts = Chart.objects.filter(song__pack=pack)
             for chart in charts:
                 save_notedata(chart)
@@ -435,10 +437,6 @@ class Command(BaseCommand):
         elapsed_time = end_time - start_time
         print(
             f"Scanning complete: {len(packlist)} packs scanned in {convert_seconds(elapsed_time)}")
-
-        # think about if we wanna store the entire notedata as well
-        # it could have a constraint to the charts table and just have the raw data
-        # we could then have a chart visualizer on the site too
 
         # after all are complete we can run s3 sync on the packs folder and any changes
         # will be syned, that include new packs and changed packs.
@@ -472,10 +470,10 @@ def save_notedata(chart):
         chart_path = working_path + chart_filename
         if os.path.exists(chart_path):
             lines = read_lines_decoded(chart_path)
-            # now we need to find the actual chart, pull all of the notedata out and store it in the db
+            # pull all of the notedata out and store it in the db
             for line in lines:
-                chart_found = False 
-                meta_found = False 
+                chart_found = False
+                meta_found = False
                 file_charttype = ""
                 file_difficulty = ""
                 file_description = ""
@@ -501,24 +499,28 @@ def save_notedata(chart):
                         file_difficulty = next(lines, None).strip().rstrip(":")
                         file_meter = int(next(lines, None).strip().rstrip(":"))
                         meta_found = True
-                    
+
                 if meta_found:
                     # Convert difficulty name using map for old difficulty names
                     diff_name = difficulty_map.get(file_difficulty.lower(), file_difficulty)
 
-                    # Stepmania never had a Challenge back in v1.64-v3.0 so we have to check for a stupid special 
-                    # case where the chart is hard, but the description is "challenge or smaniac"
+                    # Stepmania never had a Challenge back in v1.64-v3.0
+                    # so we have to check for a stupid special case where
+                    # the chart is hard, but the description is "challenge or smaniac"
                     if diff_name.lower() == 'hard':
-                        if "challenge" == file_description.lower() or "smaniac" == file_description.lower():
+                        if "challenge" == file_description.lower() or \
+                            "smaniac" == file_description.lower():
                             diff_name = "Challenge"
 
                     # if all these match, it means this is the correct notedata, let save it
-                    if (file_charttype.lower(), file_meter, diff_name.lower()) == (charttype.lower(), meter, difficulty.lower()):
+                    if (file_charttype.lower(), file_meter, diff_name.lower()) == \
+                        (charttype.lower(), meter, difficulty.lower()):
                         notedata = ""
                         # skip additional metadata if it exists
                         while True:
                             check_line = next(lines, None)
-                            if ":" not in check_line and check_line.strip() != "" and "; " not in check_line:
+                            if ":" not in check_line and check_line.strip() != \
+                                "" and "; " not in check_line:
                                 notedata += check_line
                                 notedata += '\n'
                                 break
@@ -539,19 +541,18 @@ def save_notedata(chart):
                     chart_data.save()
                     return
             if not chart_found:
-                    logger.debug(f"No chart Found for {chart_path} {charttype} {meter} {difficulty}")
-                    print(f"No Chart found for {chart_path} {charttype} {meter} {difficulty}")
-                    return
+                print(f"No Chart found for {chart_path} {charttype} {meter} {difficulty}")
+                return
         else:
-            logger.error(f"file missing {chart_path}")
-            exit()
+            print(f"file missing {chart_path}")
+            return
     else:
-        logger.debug(f"Chart is not a parsable file type {chart_filename}")
+        print(f"Chart is not a parsable file type {chart_filename}")
         return
-    logger.error(f"Chart was not parsed: {chart_filename} {difficulty} {charttype} {meter}")
-    print(f"Chart was note parsed: {chart_filename} {difficulty} {chartype} {meter}")
+    print(f"Chart was note parsed: {chart_filename} {difficulty} {charttype} {meter}")
 
 def read_lines_decoded(file_path):
+    """Returns the lines decoded by the correct charset"""
     with open(file_path, 'rb') as f:
         raw_data = f.read()
 
@@ -562,5 +563,5 @@ def read_lines_decoded(file_path):
         encoding = "utf-8"
 
     decoded_data = raw_data.decode(encoding, errors='replace')
-    
+
     return iter(decoded_data.splitlines())

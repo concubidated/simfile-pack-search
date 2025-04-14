@@ -1,5 +1,4 @@
 """web urls"""
-from django.urls import path
 from django.conf.urls.static import static
 from django.conf import settings
 from django.urls import include, path
@@ -9,7 +8,7 @@ from . import views
 
 urlpatterns = [
     path("packs/", views.pack_list),
-    path("pack/<int:packid>", views.pack),
+    path("pack/<int:packid>", views.pack_view),
     path("song/<int:songid>", views.chart_list),
     path("songs", views.list_all_songs),
     path("search", views.search),
