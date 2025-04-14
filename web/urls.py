@@ -13,9 +13,6 @@ urlpatterns = [
     path("songs", views.list_all_songs),
     path("search", views.search),
     path("search/<str:search_type>/<str:search_query>", views.search),
-    path("test", views.test),
-    path("test/<int:songid>", views.test),
-    path("test/<int:songid>/<int:chartid>", views.test),
     path("", views.main),
     ]
 

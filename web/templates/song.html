@@ -7,7 +7,7 @@
     <div class="row mb-4">
         <div class="col-12 col-md-4 text-center">
             {% if song.banner %}
-                <img class=" shadow border mb-5 img-fluid" src="/media/images/song/{{ song.banner }}" alt="{{ song.title }}">
+                <img class=" shadow border mb-5 img-fluid" src="/media/images/songs/{{ song.banner }}" alt="{{ song.title }}">
             {% elif song.pack.banner %}<img class="shawdow border mb-5 img-fluid" src="/media/images/packs/{{ song.pack.banner }}">
                 {% else %}<img loading="lazy" class=" shawdow border mb-5 img-fluid" src="/media/images/packs/nobanner.png"></td>
             {% endif %}
