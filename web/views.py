@@ -3,6 +3,7 @@ import re, json
 from collections import OrderedDict
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.db.models import Prefetch, Min, Max, Count, F, Value
 
@@ -50,6 +51,9 @@ def search(request, search_type=None, search_query=None):
             )
             .filter(artist__icontains=search_query))
     elif "credit" in search_type:
+        if ("Foy" in search_query):
+            return HttpResponse("<img src='https://i.imgur.com/tgB48zC.gif'>")
+
         songs = (
             Song.objects.prefetch_related(
                 Prefetch("charts", queryset=charts_qs)
