@@ -4,7 +4,7 @@
 
 {% block title %}Pack - {{ pack.name }}{% endblock %}
 {% block content %}
-<body class="container my-4 bg-dark text-light">
+<body class="container my-4">
 	<h1 class="text-center mb-4">{{ pack.name }} contains {{ pack.song_count }} songs</h1>
     <div class="row mb-4">
         <div class="col-12 col-md-4 text-center">
@@ -42,8 +42,8 @@
     </div>
 
     <div class="table-responsive">
-        <table id="songTable" class="table table-striped table-hover table-bordered table-dark">
-            <thead class="table-dark">
+        <table id="songTable" class="table table-striped table-hover table-bordered">
+            <thead class="">
             <tr>
                 <th>Banner</th>
                 <th>Song</th>
