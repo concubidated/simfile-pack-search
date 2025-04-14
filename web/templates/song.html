@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ song.title }} - {{ song.artist }}{% endblock %}
+{% block content %}
+
+<body class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12 col-md-4 text-center">
+            {% if song.banner %}
+                <img class=" shadow border mb-5 img-fluid" src="/media/images/songs/{{ song.banner }}" alt="{{ song.title }}">
+            {% elif song.pack.banner %}<img class="shawdow border mb-5 img-fluid" src="/media/images/packs/{{ song.pack.banner }}">
+                {% else %}<img loading="lazy" class=" shawdow border mb-5 img-fluid" src="/media/images/packs/nobanner.png"></td>
+            {% endif %}
+        </div>
+        <div class="col-12 col-md-8">
+            <h3>{{ song.title }}</h3>
+            {% if song.subtitle %}
+            <h5>{{ song.subtitle }}</h5>
+            {% endif %}
+            <h5>{{ song.artist }}</h5>
+            <span>{{ song.song_length_formatted }} | {{ song.bpms }} BPM</span><br>
+            <span>Pack: <a href="/pack/{{ pack.id }}"> {{ pack.name }}</a></span>
+            <div id="filterCheckboxes">
+                <label>
+                    {% if translit %}
+                    <input type="checkbox" id="toggleLanguage"> Show Translated Data
+                    {% endif %}
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <span>AVAILABLE MODES</span>
+                <!-- Top-level Tabs (Games) -->
+                <ul class="nav bottom-border" id="styleTabs" role="tablist">
+                {% for style  in style_types %}
+                <li class="nav-item" role="presentation">
+                <button class="nav-link p-1 ml-1 {% if forloop.first %}active{% endif %}"
+                    id="{{ style }}-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#{{ style }}"
+                    type="button"
+                    role="tab">
+                <img data-bs-toggle="tooltip" data-bs-placement="top" title="{{ style }}" width="64" class="image-thumbnail" src="/static/images/styles/{{ style }}.png" alt="{{ style }}">
+                </button>
+                </li>
+                {% endfor %}
+                </ul>
+            <hr>
+            {% for style, charts in style_types.items %}
+            <div class="tab-content" id="{{ style }}StyleContent">
+                <div class="tab-pane fade show {% if forloop.first %}active{% else %}{% endif %}" id="{{ style }}" data-toggle="buttons" role="tablist" aria-labelledby="{{ style }}-tab">
+                <!-- Chart buttons -->
+                {% for id, chart in charts.items %}
+                    <input
+                        type="radio"
+                class="btn-check ml-1 {% if chart.difficulty == 'Easy' %}Success
+                    {% elif chart.difficulty == 'Medium' %}Warning
+                    {% elif chart.difficulty == 'Hard' %}Danger
+                    {% elif chart.difficulty == 'Challenge'%}Primary
+                    {% elif chart.difficulty == 'Edit'%}Secondary
+                    {% else %}{% endif %}"
+                        name="btnradio"
+                data-id="#{{ chart.id }}"
+                role="chart"
+                id="button-{{ chart.id }}"
+                        autocomplete="off"
+                        onclick="hideOthers('{{ chart.id }}')"
+                {% if forloop.first %}{% if forloop.parentloop.first %}checked{% endif %}{% endif %}>
+                        <label class="btn mb-1 btn-sm btn-outline-{% if chart.difficulty == 'Easy' %}success
+                    {% elif chart.difficulty == 'Medium' %}warning
+                    {% elif chart.difficulty == 'Hard' %}danger
+                    {% elif chart.difficulty == 'Challenge'%}primary
+                    {% elif chart.difficulty == 'Edit'%}secondary
+                    {% else %}info{% endif %}" for="button-{{ chart.id }}">{{ chart.difficulty }} {{ chart.meter }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+<div id="chart-details" class="row">
+    {% for chart in charts %}
+    <div 
+        id="collapse-{{ chart.id }}"
+	    class="col-12 col-md-6 collapse {% if forloop.first %}show{% endif %} mb-2"
+        >
+            <span>Notes Per Second</span><br>
+			<span>Peak: {{ chart.npspeak|floatformat:2}}</span><br>
+            <span>Average: {{ chart.npsavg|floatformat:2}}</span>
+
+			<div class="ratio ratio-21x9 mb-4">
+                            <canvas class="mb-4 w-100 h-100" id="chart-{{ chart.id }}" style="display: block; box-sizing: border-box;"></canvas>
+			</div>
+			<div class="col-12 col-md-6">
+			<table class="mb-4 table table-sm table-borderless">
+			<tr>
+				<td>Chart Author</td>
+				<td>{{ chart.author}}</td>
+			</tr>
+			</table>
+			</div>
+
+			<div class="row">
+			  <div class="col-6 col-md-6">
+			    <table class="table table-sm">
+			      <tr>
+			        <td>Total Notes</td>
+				<td>{{ chart.taps.total }}</td>
+			      </tr>
+			      <tr>
+			        <td>Taps</td>
+				<td>{{ chart.taps.taps }}</td>
+			      </tr>
+			      <tr>
+			        <td>Jumps</td>
+				<td>{{ chart.taps.jumps }}</td>
+			      </tr>
+			      <tr>
+			        <td>Holds</td>
+				<td>{{ chart.taps.holds }}</td>
+			      </tr>
+			      <tr>
+			        <td>Mines</td>
+				<td>{{ chart.taps.mines }}</td>
+			      </tr>
+			    </table>
+			  </div>
+			  <div class="col-6 col-md-6">
+			  <table class="table table-sm">
+			      <tr>
+			        <td>&nbsp;</td>
+			      </tr>
+			      <tr>
+			        <td>Hands</td>
+				<td>{{ chart.taps.hands }}</td>
+			      </tr>
+			      <tr>
+			        <td>Rolls</td>
+				<td>{{ chart.taps.rolls }}</td>
+			      </tr>
+			      <tr>
+			        <td>Lifts</td>
+				<td>{{ chart.taps.lifts }}</td>
+			      </tr>
+			      <tr>
+			        <td>Fakes</td>
+				<td>{{ chart.taps.fakes }}</td>
+			      </tr>
+			    </table>
+			    </div>
+			</div>
+            <div class="col-12 col-md-12">
+			<table class="table table-sm table-borderless">
+			<tr>
+				<td>Chart Key</td>
+				<td>{{ chart.chartkey }}</td>
+			</tr>
+			</table>
+            </div>
+			<hr>
+			{% if chart.common_packs.count > 1 %}
+			<span>Other Packs</span>
+			<table class="table table-sm">
+                            {% for common_pack in chart.common_packs %}
+			    <tr>
+                            {% if common_pack.id != pack.id %}
+			    <tr>
+                                <td>{{ common_pack.name }}</td>
+			        <td><a href="/pack/{{ common_pack.id }}">Download</a></td> 
+				</tr>
+                            {% endif %}
+                            {% endfor %}
+
+			</table>
+			{% else %}
+			<span>This chart is not found in any other packs</span>
+			{% endif %}
+	</div>
+    {% endfor %}
+    <div class="d-block d-md-none">
+        <hr>
+      </div>
+    <div id="chart-viewer" class="col-12 col-md-6 d-flex flex-column align-items-center align-items-md-start text-center text-md-start">
+        <span>Chart Viewer</span>
+	    <div id="render" class="render">
+	        <div id="scrollbar-notes" class="scrollbar-notes">
+		    <div id="fake-scroll" class="fake-scroll"></div>
+		    </div>
+            <canvas id="notefield"></canvas>
+        </div>
+	    <label for="zoom-slider">Zoom: </label>
+	    <input type="range" id="zoom-slider" min="1" max="16" value="8" step=".1">
+		<span id="zoom-value">8</span>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/chartviewtest.js' %}"></script>
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl, {
+        delay: { show: 0, hide: 100 }
+    });
+});
+
+{% for chart in charts %}
+	{% if chart.chartdata %}
+        var chart_{{ chart.id }} = {
+            notes: {{ chart.chartdata.data|safe }}, 
+	    charttype: "{{ chart.charttype }}",
+	    width: {{ chart.notefield_width }}
+        };
+    {% else %}
+        var chart_{{ chart.id }} = null;
+	{% endif %}
+{% endfor %}
+
+let chartData = null;
+let canvas = $('#render canvas');
+let chartId = null;
+var zoom = 8;
+
+function hideOthers(currentId) {
+    chartId = currentId;
+    const allCollapses = document.querySelectorAll('#chart-details .collapse');
+    const currentCollapse = document.getElementById(`collapse-${currentId}`);
+    const currentInstance = bootstrap.Collapse.getOrCreateInstance(currentCollapse, { toggle: false });
+
+    // If the current one is already shown, don't collapse it
+    const isAlreadyVisible = currentCollapse.classList.contains('show');
+
+    // Hide all others
+    allCollapses.forEach(collapseEl => {
+        const id = collapseEl.id.split('collapse-')[1];
+        const instance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+        if (id !== currentId) {
+            instance.hide();
+        }
+    });
+
+    // Only show it if it wasn't already visible
+    if (!isAlreadyVisible) {
+        currentInstance.show();
+    }
+
+    // Render chart on open
+    const chartVarName = `chart_${currentId}`;
+    chartData = window[chartVarName];
+    if (chartData) {
+        const columns = chartData.notes[0][1][0].length;
+        if (columns < 6) {
+            chartData.width = columns * 64;
+        }
+        canvas[0].width = chartData.width;
+        canvas.css('width', chartData.width + 'px');
+        $('#render').width(chartData.width+10);
+        drawNoteField(chartData, zoom);
+    } else {
+        // If there is no chartdata, lets just hide the viewer
+        console.log("HIDE ME");
+        $('#chart-viewer').children().hide();
+        $('#render').hide();
+        canvas.hide();
+    }
+}
+
+
+
+// Update on scroll
+$(`.scrollbar-notes`).on('scroll', function() {
+	drawNoteField(chartData, zoom)
+});
+
+// Set up zoom slider
+$('#zoom-slider').on('input', function() {
+	// Get the current zoom level
+	zoom = $(this).val();
+	var zoomSpanId = $('#zoom-value');  // Use the correct selector for your chart
+	zoomSpanId.text(zoom);
+		drawNoteField(chartData, zoom);
+	});
+
+
+
+$( document ).ready(function() {
+    {% for chart in charts %}
+        const ctx{{ chart.id }} = document.getElementById('chart-{{ chart.id }}');
+        createDensityChart(ctx{{ chart.id }}, {{ chart.npsgraph }});
+    {% endfor %}
+
+    canvas = $('#render canvas')
+    {% with charts|first as initial_chart %}
+        chartId = {{ initial_chart.id }}
+        chartData = chart_{{ initial_chart.id }}
+        if (chartData == null) {
+            $('#chart-viewer').hide();
+        } else {
+            const columns = chartData.notes[0][1][0].length;
+            if (columns < 6) {
+                chartData.width = columns * 64;
+            }
+            canvas[0].width = chartData.width;
+            canvas.css('width', chartData.width + 'px');
+            $('#render').width(chartData.width+10);
+            drawNoteField(chartData, zoom);
+        }
+    {% endwith %}
+
+    var url = window.location.href;
+    checkHashOnLoad()
+
+    $('input[role="chart"]').on('click', function() {
+      const hash = $(this).attr('data-id');
+      const newUrl = url.split('#')[0] + hash;
+      history.replaceState(null, null, newUrl);
+    });
+});
+</script>
+{% endblock scripts %}

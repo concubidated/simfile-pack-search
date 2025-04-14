@@ -1,4 +1,6 @@
 smosearch/settings.py
+media/*
+working/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

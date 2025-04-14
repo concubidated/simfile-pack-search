@@ -17,6 +17,7 @@ class PackSubStyle(models.TextChoices):
     MODS = 'mods'
     STAMINA = 'stamina'
     DUMP = 'dump'
+    ALLAROUND = 'all around'
 
 class PackSync(models.TextChoices):
     """PackSync is the offset of the pack"""
@@ -40,8 +41,10 @@ class Pack(models.Model):
     scanned = models.BooleanField()
     sha1sum = models.CharField(max_length=40)
     banner = models.CharField(max_length=64, blank=True)
+    authors = models.JSONField(default=list)
     types = models.JSONField(default=list)
     style = models.JSONField(default=list)
+    packType = models.CharField(max_length=32, choices=PackStyle.choices, blank=True, null=True)
     substyle = models.CharField(max_length=32, choices=PackSubStyle.choices, blank=True, null=True)
     sync = models.CharField(max_length=32,
                             choices=PackSync.choices,
@@ -58,17 +61,29 @@ class Pack(models.Model):
     date_scanned = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.name} - {self.style}"
+        return f"{self.name} - {self.types}"
 
 class Song(models.Model):
     """Songs are the folders that container the charts"""
     pack = models.ForeignKey(Pack, on_delete=models.CASCADE, related_name="songs") # Link to Packs
     title = models.CharField(max_length=255)
+    credit = models.JSONField(default=list)
     artist = models.CharField(max_length=255)
-    filename = models.CharField(max_length=100)
+    subtitle = models.CharField(max_length=255)
+    titletranslit = models.CharField(max_length=255, blank=True, null=True)
+    artisttranslit = models.CharField(max_length=255, blank=True, null=True)
+    subtitletranslit = models.CharField(max_length=255, blank=True, null=True)
+    filename = models.CharField(max_length=255)
     songlength = models.FloatField(default=0)
     banner = models.CharField(max_length=255, blank=True, null=True)
-    bpms = models.CharField(max_length=100, blank=True, null=True)  # Can store BPMs as a string
+    bpms = models.CharField(max_length=100, blank=True, null=True)
+
+    def song_length_formatted(self):
+        """Formats the song length"""
+        minutes = int(self.songlength // 60)
+        seconds = int(self.songlength % 60)
+        return f"{minutes}:{seconds:02d}"
+
     def __str__(self):
         return f"{self.title} - {self.artist} - {self.pack.name}"
 
@@ -78,11 +93,23 @@ class Chart(models.Model):
     charttype = models.CharField(max_length=50)
     difficulty = models.CharField(max_length=50)
     meter = models.IntegerField()
+    author = models.CharField(max_length=128)
     lastsecondhint = models.FloatField()
     npspeak = models.FloatField()
-    npsgraph = models.JSONField()  # Stores the list of numbers
-    chartkey = models.CharField(max_length=64, unique=True)  # Ensure uniqueness
-    taps = models.JSONField(default=dict)
+    npsgraph = models.JSONField(default=list)
+    chartkey = models.CharField(max_length=64)
+    taps = models.JSONField(default=list)
+
+    class Meta:
+        unique_together = ('chartkey', 'song')
 
     def __str__(self):
         return f"{self.song.__str__()} - {self.difficulty} ({self.meter} - {self.charttype})"
+
+class ChartData(models.Model):
+    """Full notedata of a chart"""
+    chart = models.OneToOneField(Chart, on_delete=models.CASCADE, related_name="chartdata")
+    data = models.TextField()
+
+    def __str__(self):
+        return f"Notedata for {self.chart.__str__()}"
