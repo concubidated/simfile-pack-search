@@ -54,6 +54,12 @@ def convert_seconds(seconds):
 
     return " ".join(parts)
 
+def print_warning(string):
+    RED = '\033[30m'
+    WARNING = '\033[93m'
+    RESET = '\033[0m'
+    print(f"{WARNING}{string}{RESET}")
+
 def extract_file(zip_ref, member, path):
     """Extract s single file from the zip"""
     zip_ref.extract(member, path)
@@ -267,7 +273,9 @@ class Command(BaseCommand):
             unzip(pack_path, outfox_song_path)
             #unzip_fast(pack_path, outfox_song_path, workers=8)
             if not os.path.exists(fullpath):
-                print(f"{pack_path} skipped, directory path wrong")
+                print_warning(f"{pack_path} skipped, directory path wrong")
+                for trash in os.listdir(outfox_song_path):
+                    shutil.rmtree(os.path.join(outfox_song_path,trash))
                 continue
             pack_hash = sha1sum(pack_path)
             size = os.stat(pack_path).st_size
@@ -324,6 +332,7 @@ class Command(BaseCommand):
             try:
                 rc = subprocess.run(["docker",
                                         "run",
+                                        "--rm",
                                         #"--user", "1000:1000",
                                         "-v", f"{outfox_cache_path}:/outfox/Cache",
                                         "-v", f"{outfox_song_path}:/outfox/Songs",
@@ -494,10 +503,19 @@ def save_notedata(chart):
                                 break
                 else:
                     if line.strip().startswith("#NOTES:"):
-                        file_charttype = next(lines, None).strip().rstrip(':')
-                        file_description = next(lines, None).strip().rstrip(":")
-                        file_difficulty = next(lines, None).strip().rstrip(":")
-                        file_meter = int(next(lines, None).strip().rstrip(":"))
+                        # RhythmCodex converts put these on single line :facepalm:
+                        if len(line.split(":")) > 6:
+                            rcodex = True
+                            parts = line.split(":")
+                            file_charttype = parts[1]
+                            file_description = parts[2]
+                            file_difficulty = parts[3]
+                            file_meter = int(parts[4])
+                        else:
+                            file_charttype = next(lines, None).strip().rstrip(':')
+                            file_description = next(lines, None).strip().rstrip(":")
+                            file_difficulty = next(lines, None).strip().rstrip(":")
+                            file_meter = int(next(lines, None).strip().rstrip(":"))
                         meta_found = True
 
                 if meta_found:
@@ -513,6 +531,7 @@ def save_notedata(chart):
                             diff_name = "Challenge"
 
                     # if all these match, it means this is the correct notedata, let save it
+                    #print(f"{type(file_charttype)} {type(charttype)} {type(file_meter)} {type(meter)} {type(diff_name)} {type(difficulty)}")
                     if (file_charttype.lower(), file_meter, diff_name.lower()) == \
                         (charttype.lower(), meter, difficulty.lower()):
                         notedata = ""
@@ -526,6 +545,10 @@ def save_notedata(chart):
                                 break
                         while True:
                             line = next(lines, None)
+                            # Simfile  corrupt, lame.
+                            if(line is None):
+                                print("chart ended early")
+                                break;
                             notedata += line
                             notedata += '\n'
                             if ';' in line:
@@ -533,7 +556,10 @@ def save_notedata(chart):
                                 break
                     else:
                         while True:
-                            line = next(lines, None).strip()
+                            line = next(lines, None)
+                            if line is None:
+                                break
+                            line.strip()
                             if ';' in line:
                                 break
                 if chart_found:
@@ -541,15 +567,14 @@ def save_notedata(chart):
                     chart_data.save()
                     return
             if not chart_found:
-                print(f"No Chart found for {chart_path} {charttype} {meter} {difficulty}")
+                print_warning(f"No Chart found for {chart_path} {charttype} {meter} {difficulty}")
                 return
         else:
-            print(f"file missing {chart_path}")
+            print_warning(f"file missing {chart_path}")
             return
     else:
-        print(f"Chart is not a parsable file type {chart_filename}")
         return
-    print(f"Chart was note parsed: {chart_filename} {difficulty} {charttype} {meter}")
+    print_warning(f"Chart was note parsed: {chart_filename} {difficulty} {charttype} {meter}")
 
 def read_lines_decoded(file_path):
     """Returns the lines decoded by the correct charset"""
