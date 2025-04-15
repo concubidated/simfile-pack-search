@@ -17,7 +17,6 @@
             <th>Size</th>
             <th>Song Count</th>
             <th>Types(s)</th>
-            <th>Credit(s)</th>
             <th>Date</th>
             <th class="no-sort">Download</th>
             <th>Styles</th>
@@ -35,7 +34,6 @@
 			    <img alt="{{ type }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ type }} charts" class="img-fluid d-inline-block" style="max-width: 30px; filter: invert(0);" src="{% static 'images/types/'|add:type|add:'.png' %}">
 			{% endfor %}
             </td>
-            <td class="small">{% if pack.authors|length > 4 %}Various{% else %}{% for author in pack.authors %}{{ author }}<br>{% endfor %}{% endif %}</td>
             <td class="small">{{ pack.date_scanned|date:"Y-m-d" }}</td>
             <td class="text-center"><a href="http://mirror.reenigne.net/simfiles/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a></td>
             <td data-sort="{{ pack.style }}"></td>
@@ -60,7 +58,7 @@ $(document).ready(function() {
             targets: "no-sort"
             },
             {
-                target: 8,
+                target: 7,
                 visible: false
             }],
         pageLength: 25,
