@@ -266,6 +266,9 @@ class Command(BaseCommand):
 
                 # rescan the pack but only delete the song/charts
                 Song.objects.filter(pack=db_pack).delete()
+                db_pack.style = {}
+                db_pack.authors = {}
+                db_pack.save()
             except Pack.DoesNotExist:
                 pass
 
@@ -386,6 +389,10 @@ class Command(BaseCommand):
                     os.makedirs('media/images/songs/', exist_ok=True)
                     shutil.move(song_banner, destination_path)
                     last_song.banner = new_song_banner
+
+            if not songs:
+                print_warning(f"{pack.name} ain't got no songs in it")
+                continue
 
             # lets build a list of chart authors for the pack metadata
 
