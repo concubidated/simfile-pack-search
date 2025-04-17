@@ -55,10 +55,10 @@ def convert_seconds(seconds):
     return " ".join(parts)
 
 def print_warning(string):
-    RED = '\033[30m'
-    WARNING = '\033[93m'
-    RESET = '\033[0m'
-    print(f"{WARNING}{string}{RESET}")
+    """Add some color to terminal printing"""
+    warning = '\033[93m'
+    reset = '\033[0m'
+    print(f"{warning}{string}{reset}")
 
 def extract_file(zip_ref, member, path):
     """Extract s single file from the zip"""
@@ -512,7 +512,6 @@ def save_notedata(chart):
                     if line.strip().startswith("#NOTES:"):
                         # RhythmCodex converts put these on single line :facepalm:
                         if len(line.split(":")) > 6:
-                            rcodex = True
                             parts = line.split(":")
                             file_charttype = parts[1]
                             file_description = parts[2]
@@ -538,7 +537,6 @@ def save_notedata(chart):
                             diff_name = "Challenge"
 
                     # if all these match, it means this is the correct notedata, let save it
-                    #print(f"{type(file_charttype)} {type(charttype)} {type(file_meter)} {type(meter)} {type(diff_name)} {type(difficulty)}")
                     if (file_charttype.lower(), file_meter, diff_name.lower()) == \
                         (charttype.lower(), meter, difficulty.lower()):
                         notedata = ""
@@ -553,9 +551,9 @@ def save_notedata(chart):
                         while True:
                             line = next(lines, None)
                             # Simfile  corrupt, lame.
-                            if(line is None):
+                            if line is None:
                                 print("chart ended early")
-                                break;
+                                break
                             notedata += line
                             notedata += '\n'
                             if ';' in line:

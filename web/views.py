@@ -66,26 +66,14 @@ def search(request, search_type=None, search_query=None):
             )
             .filter(credit__icontains=search_query))
     elif "pack" in search_type:
-        songs = (
-            Song.objects.prefetch_related(
-                Prefetch("charts", queryset=charts_qs)
-            )
-            .select_related("pack")
-            .annotate(
-                min_meter=Min("charts__meter"),
-                max_meter=Max("charts__meter")
-            )
-            .filter(pack__name__icontains=search_query))
+        packs = list(Pack.objects.filter(name__icontains=search_query)
+                     .annotate(song_count=Count('songs')).order_by("name"))
+        packs.sort(key=lambda pack: natural_sort_key(pack.name))
+        return render(request, "main.html", {"packs": packs, "search_query": search_query})
     else:
         redirect("/")
 
-    return render(request, "search.html", {"songs": songs})
-
-def pack_list(request):
-    """list all the packs"""
-    packs = list(Pack.objects.all().order_by("name"))
-    packs.sort(key=lambda pack: natural_sort_key(pack.name))
-    return render(request, "packs.html", {"packs": packs})
+    return render(request, "search.html", {"songs": songs, "search_query": search_query})
 
 def pack_view(request, packid):
     """list all the songs in a pack"""
@@ -271,6 +259,9 @@ def main(request):
 
     return render(request, "main.html", context)
 
+def faq_view(request):
+    """faq view"""
+    return render(request, "faq.html", {})
 #@cache_page(timeout=None)  # Cache the view for 1 day
 def list_all_songs(request):
     """list all songs will query all songs and charts"""

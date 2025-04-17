@@ -8,7 +8,7 @@
                 <option {% if "pack" in request.path %}selected{% endif %} value="pack">Pack Name</option>
                 <option {% if "credit" in request.path %}selected{% endif %} value="credit">Chart Author</option>
             </select>
-            <input type="text" id="search" name="search" class="form-control" placeholder="">
+            <input type="text" id="search" name="search" class="form-control" {% if search_query %} value="{{ search_query }}" {% endif %} placeholder="">
             <button type="submit" name="submit" class="btn btn-primary">Search</button>
         </div>
     </form>
@@ -25,6 +25,12 @@
                 <div><label><input type="checkbox" class="filter-checkbox" value="pump"> Pump</label></div>
                 <div><label><input type="checkbox" class="filter-checkbox" value="smx"> SMX</label></div>
                 <div><label><input type="checkbox" class="filter-checkbox" value="techno"> Techno</label></div>
+            </div>
+            <div>
+                <label>Filter by Style:</label>
+                <div><label><input type="checkbox" class="filter-checkbox" value="single"> Singles</label></div>
+                <div><label><input type="checkbox" class="filter-checkbox" value="double"> Doubles</label></div>
+                <div><label><input type="checkbox" class="filter-checkbox" value="solo"> Solo</label></div>
             </div>
         </div>
     </div> 

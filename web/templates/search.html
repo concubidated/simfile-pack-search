@@ -88,6 +88,18 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
 
     var table = $('#songTable').DataTable();
 
+
+    const match = window.location.hash.match(/page=(\d+)/);
+    if (match) {
+        const pageNum = parseInt(match[1], 10) - 1;
+        table.page(pageNum).draw('page');
+    }
+
+    table.on('page.dt', function () {
+        const info = table.page.info();
+        window.location.hash = `page=${info.page + 1}`;
+    });
+
     // Track active filters
     let activeFilters = [];
 

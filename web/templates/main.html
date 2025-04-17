@@ -25,7 +25,7 @@
         <tbody>
         {% for pack in packs %}
 		<tr>
-			<td><img loading="lazy" class="img-fluid rounded" style="max-width:200px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
+			<td><img loading="lazy" class="img-fluid rounded" style="max-height:50px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
             <td class="small"><a href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></td>
             <td data-sort="{{ pack.size }}" class="small">{{ pack.size|filesizeformat }}</td>
             <td class="small">{{ pack.song_count }}</td>
