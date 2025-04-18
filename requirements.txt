@@ -1,0 +1,9 @@
+chardet
+Django
+django-debug-toolbar
+humanize
+imageio
+mysqlclient
+pylint
+gunicorn
+lz4

@@ -1,0 +1,90 @@
+services:
+  # Proxy router that handles static, media, and app traffic
+  proxy-router:
+    image: nginx:alpine
+    container_name: proxy-router
+    volumes:
+      - ./nginx/proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./static:/static:ro
+      - /data/media:/media:ro
+    depends_on:
+      - web
+    environment:
+      VIRTUAL_HOST: example.com
+      LETSENCRYPT_HOST: example.com
+    networks:
+      - web
+
+  # Nginx reverse proxy for the domain, manages SSL with Let's Encrypt
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs:/etc/nginx/certs:ro
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+    networks:
+      - web
+
+  # Let's Encrypt companion container for automatic SSL certificate renewal
+  letsencrypt:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    environment:
+      # for testing
+      ACME_CA_URI: https://acme-staging-v02.api.letsencrypt.org/directory
+      NGINX_PROXY_CONTAINER: nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs:/etc/nginx/certs
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+    depends_on:
+      - nginx-proxy
+    networks:
+      - web
+
+  # MariaDB database for Django app
+  db:
+    image: mariadb:10.11
+    container_name: mariadb
+    volumes:
+      - db_data:/var/lib/mysql
+    env_file: .env
+    restart: always
+    networks:
+      - web
+
+  # Django app container
+  web:
+    build: .
+    container_name: django_web
+    command: gunicorn smosearch.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - /data/media:/app/media
+      - /data/working:/data/working
+      - /data/packs:/data/packs
+      - /data/staging:/app/staging
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./static:/app/static
+    env_file: .env
+    expose:
+      - "8000"
+    depends_on:
+      - db
+    networks:
+      - web
+
+volumes:
+  db_data:
+  certs:
+  vhost:
+  html:
+
+networks:
+  web:
+
