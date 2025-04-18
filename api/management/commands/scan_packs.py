@@ -239,7 +239,7 @@ class Command(BaseCommand):
 
         # debug var for testing, rescans in the future will just be setting
         # the scanned boolean to false in the db
-        rescan = True
+        rescan = False
 
         shutil.rmtree(outfox_song_path, ignore_errors=True)
         os.makedirs(outfox_song_path, exist_ok=True)
@@ -447,7 +447,7 @@ class Command(BaseCommand):
             shutil.rmtree(fullpath)
 
             # move zip file to data folder
-            shutil.move(pack_path, f"/data/packs/{filename}")
+            #shutil.move(pack_path, f"/data/packs/{filename}")
 
         end_time = time.time()  # End timer
         elapsed_time = end_time - start_time
