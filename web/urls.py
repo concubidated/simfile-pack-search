@@ -7,11 +7,11 @@ import debug_toolbar
 from . import views
 
 urlpatterns = [
-    path("packs/", views.pack_list),
     path("pack/<int:packid>", views.pack_view),
     path("song/<int:songid>", views.chart_list),
     path("songs", views.list_all_songs),
     path("search", views.search),
+    path("faq", views.faq_view),
     path("search/<str:search_type>/<str:search_query>", views.search),
     path("", views.main),
     ]

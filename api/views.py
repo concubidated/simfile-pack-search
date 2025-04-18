@@ -23,4 +23,3 @@ def pack_list(request):
         out += f"{pack.name}, {pack.song_count}, {pack.size}"
         out += "\n"
     return HttpResponse(f"<pre>{out}</pre>")
-
