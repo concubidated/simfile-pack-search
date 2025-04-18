@@ -3,6 +3,7 @@ Django
 django-debug-toolbar
 humanize
 imageio
+imageio-ffmpeg
 mysqlclient
 pylint
 gunicorn
