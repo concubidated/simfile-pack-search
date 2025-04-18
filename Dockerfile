@@ -3,7 +3,7 @@ FROM python:3.12-slim
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev pkg-config \
-    build-essential
+    build-essential gifsicle
 
 RUN apt-get -y install ca-certificates curl && \
     install -m 0755 -d /etc/apt/keyrings && \
