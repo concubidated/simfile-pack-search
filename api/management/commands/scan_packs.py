@@ -10,6 +10,7 @@ import shutil
 import zipfile
 import hashlib
 import logging
+import datetime
 import subprocess
 import sys
 from pathlib import Path
@@ -255,14 +256,14 @@ class Command(BaseCommand):
             fullpath = os.path.join(outfox_song_path, name)
             try:
                 db_pack = Pack.objects.get(name=name)
-                #if db_pack.scanned == 1:
-                #    print(f"Skipping {name} already exists")
-                #    continue
-
-                ## temp method for now
-                if not rescan:
+                if db_pack.scanned == 1:
                     print(f"Skipping {name} already exists")
                     continue
+
+                ## temp method for now
+                #if not rescan:
+                #    print(f"Skipping {name} already exists")
+                #    continue
 
                 # rescan the pack but only delete the song/charts
                 Song.objects.filter(pack=db_pack).delete()
@@ -282,6 +283,7 @@ class Command(BaseCommand):
                 continue
             pack_hash = sha1sum(pack_path)
             size = os.stat(pack_path).st_size
+            date_mtime = datetime.datetime.fromtimestamp(os.stat(pack_path).st_mtime)
 
             print(name, humanize.naturalsize(size))
 
@@ -319,6 +321,7 @@ class Command(BaseCommand):
                 pack, _ = Pack.objects.get_or_create(
                     name=name,
                     size=size,
+                    date_created=date_mtime,
                     sha1sum=pack_hash,
                     scanned=False,
                     extras=found_extra,
