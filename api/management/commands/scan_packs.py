@@ -327,7 +327,10 @@ def save_notedata(chart):
                             file_charttype = parts[1]
                             file_description = parts[2]
                             file_difficulty = parts[3]
-                            file_meter = int(float(parts[4]))
+                            if parts[4]:
+                                file_meter = int(float(parts[4]))
+                            else:
+                                file_meter = 1
                         else:
                             file_charttype = next(lines, None).strip().rstrip(':')
                             file_description = next(lines, None).strip().rstrip(":")
