@@ -107,6 +107,8 @@ def parse_ssc_data(data):
         # ugh, annoying
         if result['encoding'] == "Windows-1252":
             result['encoding'] = "utf-8"
+        if result['encoding'] == "EUC-TW":
+            result['encoding'] = "utf-8"
         data = data.decode(result['encoding'], errors='replace')
 
     lines = data.splitlines()
