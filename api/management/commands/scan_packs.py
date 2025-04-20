@@ -3,221 +3,28 @@ scan packs will iterated over a list of packs, unzip,
 and parse the songs/charts into the database
 """
 import os
-import re
 import time
-import glob
 import shutil
-import zipfile
 import hashlib
-import logging
 import datetime
 import subprocess
-import sys
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 
 import chardet
 import humanize
-import lz4.block
-import imageio.v3 as iio
-import imageio
-from PIL import Image
-import numpy as np
 
 from django.core.management.base import BaseCommand
 from django.db.models import Count
 from django.db import IntegrityError
 
 from api.models import Pack, Song, Chart, ChartData
-from api.management.scripts import sqlite_query, data_import, chart_parse
+from api.management.scripts import sqlite_query, data_import, chart_parse, utils
 
 ## Constants
 working_path = os.getenv('OUTFOX_WORKING_PATH', './working')
 outfox_song_path = os.path.join(working_path, 'Songs')
 outfox_cache_path = os.path.join(working_path, 'Cache')
 DOCKER_PATH = "registry.digitalocean.com/outfox-containers/cache-builder"
-
-logger = logging.getLogger(__name__)
-
-def convert_seconds(seconds):
-    """Converts seconds into human readable format"""
-    seconds = round(seconds)  # Round to the nearest second
-    hours, remainder = divmod(seconds, 3600)
-    minutes, secs = divmod(remainder, 60)
-
-    parts = []
-    if hours:
-        parts.append(f"{hours}h")
-    if minutes:
-        parts.append(f"{minutes}m")
-    if secs:
-        parts.append(f"{secs}s")
-
-    return " ".join(parts)
-
-def print_warning(string):
-    """Add some color to terminal printing"""
-    warning = '\033[93m'
-    reset = '\033[0m'
-    print(f"{warning}{string}{reset}")
-
-def extract_file(zip_ref, member, path):
-    """Extract s single file from the zip"""
-    zip_ref.extract(member, path)
-
-def unzip_fast(file, path, workers=8):
-    """Multi-threaded unzip wrapper"""
-    with zipfile.ZipFile(file, 'r') as zip_ref:
-        members = zip_ref.namelist()
-
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            for member in members:
-                executor.submit(extract_file, zip_ref, member, path)
-
-def unzip(file, path):
-    """Simple unzip wrapper"""
-    with zipfile.ZipFile(file, 'r') as zip_ref:
-        zip_ref.extractall(path)
-
-def sha1sum(file):
-    """Simple sha1sum wrapper"""
-    buf_size = 65536
-    sha1 = hashlib.sha1()
-    with open(file, 'rb') as f:
-        while True:
-            data = f.read(buf_size)
-            if not data:
-                break
-            sha1.update(data)
-    return sha1.hexdigest()
-
-def find_image(path):
-    """Scan a folder and returns the first found image"""
-    bn_types = {".png", ".jpeg", ".jpg", ".gif", ".bmp", ".avi", ".mp4"}
-    ignore_pattern = re.compile(r"\b(cdtitle|bg|background)\b", re.IGNORECASE)
-    prefer_pattern = re.compile(r"\b(bn|banner)\b", re.IGNORECASE)
-
-    best_match = None
-
-    for ext in bn_types:
-        files = [os.path.join(path, f) for f in os.listdir(path) if f.lower().endswith(ext)]
-        valid_files = [f for f in files if not ignore_pattern.search(os.path.basename(f))]
-
-        # Check for a preferred file
-        for file in valid_files:
-            if prefer_pattern.search(os.path.basename(file)):
-                return file
-
-        # If no preferred image, store the first valid one
-        if valid_files and best_match is None:
-            best_match = valid_files[0]
-
-    return best_match
-
-def convert_video_to_gif(banner_path):
-    """Use ioimage to convert a video to a gif"""
-    video = iio.imread(banner_path, plugin='pyav')
-    meta = iio.immeta(banner_path, plugin='pyav')
-    height, width = video.shape[1:3]
-    colors = 256
-    resize_factor = 1.0
-    if width > 512: #standard banner size wtf lol
-        resize_factor = 512.0/width
-    target_fps = 10
-    step = max(1, int(meta['fps']) // int(target_fps))
-    reduced_frames = video[::step]
-    # Resize frames and reduce colors
-    resized_frames = [
-        Image.fromarray(frame)
-        .resize(
-            (int(width * resize_factor), int(height * resize_factor)),
-            Image.LANCZOS
-        )
-        .convert('P', palette=Image.ADAPTIVE, colors=colors)
-        for frame in reduced_frames
-    ]
-
-    # Save as GIF
-    resized_frames[0].save(
-        f"{banner_path}.gif",
-        save_all=True,
-        append_images=resized_frames[1:],
-        duration=meta['duration'] // target_fps,  # Set FPS
-        loop=0,  # Infinite loop
-        optimize=True  # Optimize for size
-    )
-    optimize_gif(f"{banner_path}.gif")
-    os.rename(f"{banner_path}.gif", banner_path)
-
-def convert_video_to_gif_2(banner_path):
-    """Convert a video to a GIF without loading everything into memory."""
-    reader = imageio.get_reader(banner_path)  # Stream video instead of loading all frames
-    meta = reader.get_meta_data()  # Get video metadata
-
-    colors = 256
-    target_fps = 10
-    width, _ = meta["size"]
-
-    resize_factor = 1.0
-    if width > 512:  # Resize large banners
-        resize_factor = 512.0 / width
-
-    original_fps = meta.get("fps", 30)  # Default to 30 FPS if missing
-    step = max(1, round(original_fps / target_fps))  # Skip frames to match target FPS
-
-    frames = []
-
-    for i, frame in enumerate(reader):
-        if i % step == 0:  # Skip frames to match target FPS
-            img = Image.fromarray(frame)
-
-            # Resize while maintaining aspect ratio
-            new_size = (int(img.width * resize_factor), int(img.height * resize_factor))
-            img = img.resize(new_size, Image.LANCZOS)
-
-            # Convert to GIF palette
-            img = img.convert("P", palette=Image.ADAPTIVE, colors=colors)
-            frames.append(img)
-
-            # Stop if too many frames (optional safeguard)
-            if len(frames) > 100:
-                break
-
-    if len(frames) >  1:
-        gif_path = f"{banner_path}.gif"
-        frames[0].save(
-            gif_path,
-            save_all=True,
-            append_images=frames[1:],
-            duration=int(1000 / target_fps),  # Duration per frame
-            loop=0,
-            optimize=True
-        )
-
-        optimize_gif(gif_path)  # Optimize GIF size
-        os.rename(gif_path, banner_path)  # Replace original file with GIF
-        #print(f"GIF saved: {banner_path}")
-    else:
-        print(f"GIF has no frames: {banner_path}")
-        sys.exit()
-
-def optimize_gif(banner_path):
-    """Run gifsicle to reduce the size"""
-    if not shutil.which("gifsicle"):
-        raise EnvironmentError("`gifsicle` is not installed or not found in PATH.")
-
-    try:
-        subprocess.run(
-            ["gifsicle", "--colors", "256", "-O9", banner_path, "-o", banner_path],
-            check=True
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"Error optimizing {banner_path}: {e}")
-
-def lz4_decompress(blob: bytes, original_size: int) -> bytes:
-    """Decompress the LZ4 data using block decompression"""
-    decompressed_data = lz4.block.decompress(blob, uncompressed_size=original_size)
-    return decompressed_data
 
 class Command(BaseCommand):
     """DJango Management Command scan_packs"""
@@ -274,32 +81,25 @@ class Command(BaseCommand):
                 pass
 
             # lets do the thing
-            unzip(pack_path, outfox_song_path)
-            #unzip_fast(pack_path, outfox_song_path, workers=8)
+            utils.unzip(pack_path, outfox_song_path)
             if not os.path.exists(fullpath):
-                print_warning(f"{pack_path} skipped, directory path wrong")
-                #TODO: Move to a cleandir func
-                for trash in os.listdir(outfox_song_path):
-                    trash_path = os.path.join(outfox_song_path,trash)
-                    if os.path.isfile(trash_path):
-                        os.unlink(trash_path)
-                    else:
-                        shutil.rmtree(trash_path)
+                utils.print_warning(f"{pack_path} skipped, directory path wrong")
+                utils.cleanup_dir(outfox_song_path)
                 continue
-            pack_hash = sha1sum(pack_path)
+            pack_hash = utils.sha1sum(pack_path)
             size = os.stat(pack_path).st_size
             date_mtime = datetime.datetime.fromtimestamp(os.stat(pack_path).st_mtime)
 
             print(name, humanize.naturalsize(size))
 
-            banner = find_image(fullpath)
+            banner = utils.find_image(fullpath)
             new_banner = ""
             if banner:
                 # lets store the image in media/images/packs and hash it
                 file_ext = os.path.splitext(banner)[1]  # Get the extension (e.g., .txt, .png)
                 file_hash = hashlib.sha1(banner.encode()).hexdigest()
                 if file_ext in {".avi", ".mp4"}:
-                    convert_video_to_gif_2(banner)
+                    utils.convert_video_to_gif(banner)
                     file_ext = ".gif"
                 new_banner = f"{file_hash}{file_ext}"
                 destination_path = os.path.join('media/images/packs/', new_banner)
@@ -363,7 +163,7 @@ class Command(BaseCommand):
 
             songs = []
             for song in out:
-                data = lz4_decompress(song[0], song[1])
+                data = utils.lz4_decompress(song[0], song[1])
                 songs.append(chart_parse.parse_ssc_data(data))
 
                 # lets store the song banner
@@ -382,7 +182,7 @@ class Command(BaseCommand):
                         song_banner = None
                         last_song.banner = None
                 if not song_banner:
-                    song_banner = find_image(song_folder)
+                    song_banner = utils.find_image(song_folder)
                     if song_banner:
                         banner_ext = os.path.splitext(song_banner)[1]
                         banner_hash = hashlib.sha1(song_banner.encode()).hexdigest()
@@ -390,7 +190,7 @@ class Command(BaseCommand):
                 # if an image file was found, lets save it
                 if song_banner:
                     if banner_ext.lower() in {".avi", ".mp4"}:
-                        convert_video_to_gif_2(song_banner)
+                        utils.convert_video_to_gif(song_banner)
                         banner_ext = ".gif"
                     new_song_banner = f"{banner_hash}{banner_ext}"
                     destination_path = os.path.join('media/images/songs/', new_song_banner)
@@ -399,7 +199,7 @@ class Command(BaseCommand):
                     last_song.banner = new_song_banner
 
             if not songs:
-                print_warning(f"{pack.name} ain't got no songs in it")
+                utils.print_warning(f"{pack.name} ain't got no songs in it")
                 continue
 
             # lets build a list of chart authors for the pack metadata
@@ -458,7 +258,7 @@ class Command(BaseCommand):
         end_time = time.time()  # End timer
         elapsed_time = end_time - start_time
         print(
-            f"Scanning complete: {len(packlist)} packs scanned in {convert_seconds(elapsed_time)}")
+            f"Scanning complete: {len(packlist)} packs scanned in {utils.convert_seconds(elapsed_time)}")
 
         # after all are complete we can run s3 sync on the packs folder and any changes
         # will be syned, that include new packs and changed packs.
@@ -583,14 +383,14 @@ def save_notedata(chart):
                     chart_data.save()
                     return
             if not chart_found:
-                print_warning(f"No Chart found for {chart_path} {charttype} {meter} {difficulty}")
+                utils.print_warning(f"No Chart found for {chart_path} {charttype} {meter} {difficulty}")
                 return
         else:
-            print_warning(f"file missing {chart_path}")
+            utils.print_warning(f"file missing {chart_path}")
             return
     else:
         return
-    print_warning(f"Chart was note parsed: {chart_filename} {difficulty} {charttype} {meter}")
+    utils.print_warning(f"Chart was note parsed: {chart_filename} {difficulty} {charttype} {meter}")
 
 def read_lines_decoded(file_path):
     """Returns the lines decoded by the correct charset"""
