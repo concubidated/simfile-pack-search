@@ -35,7 +35,7 @@
 			{% endfor %}
             </td>
 	    <td class="small">{% if pack.date_created %}{{ pack.date_created|date:"Y-m-d"}} {% else %}{{ pack.date_scanned|date:"Y-m-d" }}{% endif %}</td>
-            <td class="text-center"><a href="http://mirror.reenigne.net/simfiles/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a></td>
+            <td class="text-center"><a href="{% url 'download_pack' pack.id %}"><strong class="bi bi-download"></strong></a></td>
             <td data-sort="{{ pack.style }}"></td>
         </tr>
 	    {% empty %}

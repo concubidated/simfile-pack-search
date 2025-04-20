@@ -21,7 +21,7 @@
 		{% if pack.substyle %}<li class="list-group-item"><strong>Substyle:</strong> {{ pack.substyle }}</li> {% endif %}
 		{% if pack.extras %}<li class="list-group-item"><strong>Contains Extras</strong></li>{% endif %}
 		{% if pack.source %}<li class="list-group-item"><strong>Source:</strong> {{ pack.source }}</li>{% endif %}
-                <li class="list-group-item"><a href="http://mirror.reenigne.net/simfiles/{{ pack.name }}.zip"><strong class="bi bi-download"></strong></a><br><strong><a href="/media/packs/{{ pack.name }}.zip">Mirror</a></strong></li>
+                <li class="list-group-item"><a href="{% url 'download_pack' pack.id %}"><strong class="bi bi-download"></strong></a><br><strong><a href="{% url 'download_mirror' pack.id %}">Mirror</a></strong></li>
 
             </ul>
         </div>
