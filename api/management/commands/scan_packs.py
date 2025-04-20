@@ -234,7 +234,7 @@ class Command(BaseCommand):
 
         packlist = []
         # get list of zips in path
-        for file in os.listdir(packdir):
+        for file in sorted(os.listdir(packdir)):
             if file.endswith(".zip"):
                 packlist.append(os.path.join(packdir, file))
 
@@ -257,7 +257,7 @@ class Command(BaseCommand):
             try:
                 db_pack = Pack.objects.get(name=name)
                 if db_pack.scanned == 1:
-                    print(f"Skipping {name} already exists")
+                    #print(f"Skipping {name} already exists")
                     continue
 
                 ## temp method for now
@@ -278,8 +278,13 @@ class Command(BaseCommand):
             #unzip_fast(pack_path, outfox_song_path, workers=8)
             if not os.path.exists(fullpath):
                 print_warning(f"{pack_path} skipped, directory path wrong")
+                #TODO: Move to a cleandir func
                 for trash in os.listdir(outfox_song_path):
-                    shutil.rmtree(os.path.join(outfox_song_path,trash))
+                    trash_path = os.path.join(outfox_song_path,trash)
+                    if os.path.isfile(trash_path):
+                        os.unlink(trash_path)
+                    else:
+                        shutil.rmtree(trash_path)
                 continue
             pack_hash = sha1sum(pack_path)
             size = os.stat(pack_path).st_size
@@ -433,18 +438,16 @@ class Command(BaseCommand):
                 styletype.add(chart['charttype'].split('-')[0])
 
 
+            # lets actually store all of the notedata for cool stuff like chart previews
+            charts = Chart.objects.filter(song__pack=pack)
+            for chart in charts:
+                save_notedata(chart)
+
             pack.types = sorted(list(styletype))
             pack.style = sorted(list(charttype))
             pack.authors = sorted(list(chart_credits))
             pack.scanned = 1
             pack.save()
-
-
-            # Before we remove the packs lets parse out the
-            # actual notedata and save it from sm or ssc files
-            charts = Chart.objects.filter(song__pack=pack)
-            for chart in charts:
-                save_notedata(chart)
 
             # remove the pack from the working directory before moving on to the next one
             shutil.rmtree(fullpath)
@@ -502,12 +505,17 @@ def save_notedata(chart):
                     if line.startswith("#NOTEDATA:"):
                         while True:
                             next_line = next(lines, None).strip()
+                            if next_line:
+                                next_line = next_line.strip()
+                            else:
+                                print(f"{chart_path}: {next_line}")
+                                exit()
                             if next_line.startswith("#STEPSTYPE:"):
                                 file_charttype = next_line[len("#STEPSTYPE:"):].strip(';').strip()
                             elif next_line.startswith("#DIFFICULTY:"):
                                 file_difficulty = next_line[len("#DIFFICULTY:"):].strip(';').strip()
                             elif next_line.startswith("#METER:"):
-                                file_meter = int(next_line[len("#METER:"):].strip(';').strip())
+                                file_meter = int(float(next_line[len("#METER:"):].strip(';').strip()))
                             elif next_line.startswith("#NOTES:"):
                                 meta_found = True
                                 break
@@ -519,12 +527,12 @@ def save_notedata(chart):
                             file_charttype = parts[1]
                             file_description = parts[2]
                             file_difficulty = parts[3]
-                            file_meter = int(parts[4])
+                            file_meter = int(float(parts[4]))
                         else:
                             file_charttype = next(lines, None).strip().rstrip(':')
                             file_description = next(lines, None).strip().rstrip(":")
                             file_difficulty = next(lines, None).strip().rstrip(":")
-                            file_meter = int(next(lines, None).strip().rstrip(":"))
+                            file_meter = int(float(next(lines, None).strip().rstrip(":")))
                         meta_found = True
 
                 if meta_found:
