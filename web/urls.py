@@ -13,6 +13,8 @@ urlpatterns = [
     path("search", views.search),
     path("faq", views.faq_view),
     path("search/<str:search_type>/<str:search_query>", views.search),
+    path("download/pack/<int:pack_id>/", views.download_pack, name="download_pack"),
+    path("download/mirror/<int:pack_id>/", views.download_mirror, name="download_mirror"),
     path("", views.main),
     ]
 

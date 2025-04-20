@@ -59,6 +59,7 @@ class Pack(models.Model):
     source = models.CharField(max_length=255, blank=True, null=True)
     date_created = models.DateField(blank=True, null=True)
     date_scanned = models.DateTimeField(default=timezone.now)
+    downloads = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.name} - {self.types}"

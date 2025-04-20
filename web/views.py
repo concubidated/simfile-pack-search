@@ -1,10 +1,12 @@
 """web views"""
 import re
+import os
 import json
 from collections import OrderedDict
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
-from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.db.models import Prefetch, Min, Max, Count, F, Value
 
@@ -14,6 +16,20 @@ def natural_sort_key(text):
     """order numbers naturally cause we are hoomans"""
     return [int(part) if part.isdigit() else part.lower()
             for part in re.split(r'(\d+)', text)]
+
+def download_pack(request, pack_id):
+    pack = get_object_or_404(Pack, id=pack_id)
+    Pack.objects.filter(id=pack_id).update(downloads=F('downloads') + 1)
+    internal_path = "/packs/" + os.path.basename(f"{pack.name}.zip")
+    response = HttpResponse()
+    response['X-Accel-Redirect'] = internal_path
+    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(f"{pack.name}.zip")}"'
+    return response
+
+def download_mirror(request, pack_id):
+    pack = get_object_or_404(Pack, id=pack_id)
+    Pack.objects.filter(id=pack_id).update(downloads=F('downloads') + 1)
+    return HttpResponseRedirect("https://mirror.reenigne.net/simfiles/" + os.path.basename(f"{pack.name}.zip"))
 
 def search(request, search_type=None, search_query=None):
     """search for a song"""
