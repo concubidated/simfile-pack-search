@@ -162,5 +162,6 @@ def cleanup_dir(directory):
             print(f"Failed to delete {file_path}. Reason: {e}")
 
 def peek(iterator):
+    """Peek at the first item of an iterator without consuming it"""
     clone, preview = itertools.tee(iterator)
     return next(preview, None), clone

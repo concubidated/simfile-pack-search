@@ -3,6 +3,7 @@ scan packs will iterated over a list of packs, unzip,
 and parse the songs/charts into the database
 """
 import os
+import sys
 import time
 import shutil
 import hashlib
@@ -44,10 +45,6 @@ class Command(BaseCommand):
         for file in sorted(os.listdir(packdir)):
             if file.endswith(".zip"):
                 packlist.append(os.path.join(packdir, file))
-
-        # debug var for testing, rescans in the future will just be setting
-        # the scanned boolean to false in the db
-        rescan = False
 
         shutil.rmtree(outfox_song_path, ignore_errors=True)
         os.makedirs(outfox_song_path, exist_ok=True)
@@ -258,8 +255,9 @@ class Command(BaseCommand):
         end_time = time.time()  # End timer
         elapsed_time = end_time - start_time
         print(
-            f"Scanning complete: {len(packlist)} packs scanned in {utils.convert_seconds(elapsed_time)}")
-
+            f"Scanning complete: {len(packlist)} packs scanned in "
+            f"{utils.convert_seconds(elapsed_time)}"
+        )
         # after all are complete we can run s3 sync on the packs folder and any changes
         # will be syned, that include new packs and changed packs.
 
@@ -291,7 +289,7 @@ def save_notedata(chart):
             is_ssc = True
         chart_path = working_path + chart_filename
         if os.path.exists(chart_path):
-            #print(chart_path)
+            print(chart_path)
             lines = read_lines_decoded(chart_path)
             # pull all of the notedata out and store it in the db
             for line in lines:
@@ -310,13 +308,15 @@ def save_notedata(chart):
                                 next_line = next_line.strip()
                             else:
                                 print(f"{chart_path}: {next_line}")
-                                exit()
+                                sys.exit()
                             if next_line.startswith("#STEPSTYPE:"):
                                 file_charttype = next_line[len("#STEPSTYPE:"):].strip(';').strip()
                             elif next_line.startswith("#DIFFICULTY:"):
                                 file_difficulty = next_line[len("#DIFFICULTY:"):].strip(';').strip()
                             elif next_line.startswith("#METER:"):
-                                file_meter = int(float(next_line[len("#METER:"):].strip(';').strip()))
+                                file_meter = int(
+                                    float(next_line[len("#METER:"):].strip(';').strip())
+                                    )
                             elif next_line.startswith("#NOTES:"):
                                 meta_found = True
                                 break
@@ -336,7 +336,7 @@ def save_notedata(chart):
                             #if line is empty, skip it (ECFA 2019 grrr)
                             preview, lines = utils.peek(lines)
                             if not preview.strip():
-                               next(lines, None)
+                                next(lines, None)
                             file_charttype = next(lines, None).strip().rstrip(':')
                             file_description = next(lines, None).strip().rstrip(":")
                             file_difficulty = next(lines, None).strip().rstrip(":")
@@ -391,14 +391,18 @@ def save_notedata(chart):
                     chart_data.save()
                     return
             if not chart_found:
-                utils.print_warning(f"No Chart found for {chart_path} {charttype} {meter} {difficulty}")
+                utils.print_warning(
+                    f"No Chart found for {chart_path} {charttype} {meter} {difficulty}"
+                    )
                 return
         else:
             utils.print_warning(f"file missing {chart_path}")
             return
     else:
         return
-    utils.print_warning(f"Chart was note parsed: {chart_filename} {difficulty} {charttype} {meter}")
+    utils.print_warning(
+        f"Chart was note parsed: {chart_filename} {difficulty} {charttype} {meter}"
+        )
 
 def read_lines_decoded(file_path):
     """Returns the lines decoded by the correct charset"""

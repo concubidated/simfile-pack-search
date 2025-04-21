@@ -18,18 +18,28 @@ def natural_sort_key(text):
             for part in re.split(r'(\d+)', text)]
 
 def download_pack(request, pack_id):
+    """wrapper for downloading packs"""
     pack = get_object_or_404(Pack, id=pack_id)
     Pack.objects.filter(id=pack_id).update(downloads=F('downloads') + 1)
     internal_path = "/packs/" + os.path.basename(f"{pack.name}.zip")
     response = HttpResponse()
     response['X-Accel-Redirect'] = internal_path
-    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(f"{pack.name}.zip")}"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="{os.path.basename(f"{pack.name}.zip")}"'
+    )
     return response
 
 def download_mirror(request, pack_id):
+    """wrapper for downloading from the mirror"""
     pack = get_object_or_404(Pack, id=pack_id)
+    base_url = os.environ.get("MIRROR_BASE_URL")
+    if not base_url:
+        return HttpResponse("Error: Mirror URL Not Set")
+
+    file_name = f"{pack.name}.zip"
+    redirect_url = base_url.rstrip("/") + "/" + os.path.basename(file_name)
     Pack.objects.filter(id=pack_id).update(downloads=F('downloads') + 1)
-    return HttpResponseRedirect("https://mirror.reenigne.net/simfiles/" + os.path.basename(f"{pack.name}.zip"))
+    return HttpResponseRedirect(redirect_url)
 
 def search(request, search_type=None, search_query=None):
     """search for a song"""
@@ -37,7 +47,6 @@ def search(request, search_type=None, search_query=None):
         search_type = request.POST.get("type")
         search_query = request.POST.get("search")
         return redirect(f"/search/{search_type}/{search_query}")
-
 
     valid_types = ["title", "artist", "credit", "pack"]
     if search_type not in valid_types:
