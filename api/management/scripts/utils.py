@@ -180,11 +180,13 @@ def discord_webhook(pack):
 
     chart_type_list = '\n'.join(f"• {ct}" for ct in sorted(pack["chart_types"]))
     name = pack["name"]
+    id = pack["id"]
     size = pack["size"]
     song_count = pack["song_count"]
 
     embed = {
-        "title": "New Pack Scanned",
+        "title": "New Pack Added",
+        "url": f"https://{os.environ.get('DOMAIN')/download/pack/{id}}",
         "color": 3447003,
         "fields": [
             {
@@ -198,9 +200,9 @@ def discord_webhook(pack):
         ],
     }
 
-    if pack["banner"]:
+    if pack.get("banner"):
         embed["image"] = {
-            "url": f"{os.environ.get('DOMAIN')}/media/images/packs/{pack['banner']}"
+            "url": f"https://{os.environ.get('DOMAIN')}/media/images/packs/{pack['banner']}"
         }
 
     payload = {
@@ -209,5 +211,5 @@ def discord_webhook(pack):
         "embeds": [embed]
     }
 
-    requests.post(url, json=payload)
 
+    requests.post(url, json=payload)

@@ -8,3 +8,4 @@ mysqlclient
 pylint
 gunicorn
 lz4
+requests

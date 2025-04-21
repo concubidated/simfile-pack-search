@@ -249,6 +249,7 @@ class Command(BaseCommand):
 
             # post to discord
             message = {}
+            message["id"] = pack.id
             message["name"] = pack.name
             message["size"] =  humanize.naturalsize(pack.size)
             message["song_count"] = len(songs)
