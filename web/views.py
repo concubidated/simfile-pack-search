@@ -2,6 +2,7 @@
 import re
 import os
 import json
+import string
 from collections import OrderedDict
 from django.views.decorators.cache import cache_page
 from django.core.cache import cache
@@ -13,9 +14,24 @@ from django.db.models import Prefetch, Min, Max, Count, F, Value
 from api.models import Pack, Song, Chart, ChartData
 
 def natural_sort_key(text):
-    """order numbers naturally cause we are hoomans"""
-    return [int(part) if part.isdigit() else part.lower()
-            for part in re.split(r'(\d+)', text)]
+    """we are hoomans, lets sort like it"""
+    # Determine top-level priority based on first character
+    first_char = text.lstrip()[0] if text.strip() else ''
+    if first_char in string.ascii_letters:
+        priority = 2
+    elif first_char.isdigit():
+        priority = 1
+    else:
+        priority = 0
+
+    # Split text into alphanumeric chunks for natural sorting
+    parts = re.split(r'(\d+)', text)
+    normalized = [
+        int(part) if part.isdigit() else part.lower()
+        for part in parts
+    ]
+
+    return (priority, normalized)
 
 def download_pack(request, pack_id):
     """wrapper for downloading packs"""
@@ -278,6 +294,7 @@ def main(request):
     """main pack list"""
     packs = list(Pack.objects.annotate(song_count=Count('songs')).order_by("name"))
     packs.sort(key=lambda pack: natural_sort_key(pack.name))
+
     context = {
         "packs": packs
     }
