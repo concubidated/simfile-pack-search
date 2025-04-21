@@ -36,13 +36,14 @@ def natural_sort_key(text):
 def download_pack(request, pack_id):
     """wrapper for downloading packs"""
     pack = get_object_or_404(Pack, id=pack_id)
+
+    file_name = f"{pack.name}.zip"
+
     Pack.objects.filter(id=pack_id).update(downloads=F('downloads') + 1)
-    internal_path = "/packs/" + os.path.basename(f"{pack.name}.zip")
     response = HttpResponse()
-    response['X-Accel-Redirect'] = internal_path
-    response["Content-Disposition"] = (
-        f'attachment; filename="{os.path.basename(f"{pack.name}.zip")}"'
-    )
+    response["X-Accel-Redirect"] = f"/packs/{file_name}"
+    response["Content-Disposition"] = f'attachment; filename="{file_name}"'
+    response["Content-Type"] = ""
     return response
 
 def download_mirror(request, pack_id):

@@ -7,11 +7,12 @@ services:
       - ./nginx/proxy.conf:/etc/nginx/conf.d/default.conf:ro
       - ./static:/static:ro
       - /data/media:/media:ro
+      - /data/packs:/packs:ro
     depends_on:
       - web
     environment:
-      VIRTUAL_HOST: example.com
-      LETSENCRYPT_HOST: example.com
+      VIRTUAL_HOST: ${DOMAIN}
+      LETSENCRYPT_HOST: ${DOMAIN}
     networks:
       - web
 
@@ -36,7 +37,7 @@ services:
     container_name: nginx-proxy-acme
     environment:
       # for testing
-      ACME_CA_URI: https://acme-staging-v02.api.letsencrypt.org/directory
+      #ACME_CA_URI: https://acme-staging-v02.api.letsencrypt.org/directory
       NGINX_PROXY_CONTAINER: nginx-proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
