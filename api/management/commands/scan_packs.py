@@ -291,6 +291,7 @@ def save_notedata(chart):
             is_ssc = True
         chart_path = working_path + chart_filename
         if os.path.exists(chart_path):
+            #print(chart_path)
             lines = read_lines_decoded(chart_path)
             # pull all of the notedata out and store it in the db
             for line in lines:
@@ -332,6 +333,10 @@ def save_notedata(chart):
                             else:
                                 file_meter = 1
                         else:
+                            #if line is empty, skip it (ECFA 2019 grrr)
+                            preview, lines = utils.peek(lines)
+                            if not preview.strip():
+                               next(lines, None)
                             file_charttype = next(lines, None).strip().rstrip(':')
                             file_description = next(lines, None).strip().rstrip(":")
                             file_difficulty = next(lines, None).strip().rstrip(":")

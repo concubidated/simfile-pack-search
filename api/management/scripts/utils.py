@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import itertools
 import hashlib
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -159,3 +160,7 @@ def cleanup_dir(directory):
                 shutil.rmtree(file_path)
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
+
+def peek(iterator):
+    clone, preview = itertools.tee(iterator)
+    return next(preview, None), clone
