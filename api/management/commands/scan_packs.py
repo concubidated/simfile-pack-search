@@ -246,6 +246,17 @@ class Command(BaseCommand):
             pack.scanned = 1
             pack.save()
 
+
+            # post to discord
+            message = {}
+            message["name"] = pack.name
+            message["size"] =  humanize.naturalsize(pack.size)
+            message["song_count"] = len(songs)
+            if pack.banner:
+                message["banner"] = pack.banner
+            message["chart_types"] = pack.style
+            utils.discord_webhook(message)
+
             # remove the pack from the working directory before moving on to the next one
             shutil.rmtree(fullpath)
 
@@ -334,10 +345,13 @@ def save_notedata(chart):
                                 file_meter = 1
                         else:
                             #if line is empty, skip it (ECFA 2019 grrr)
-                            preview, lines = utils.peek(lines)
-                            if not preview.strip():
+                            if not line.strip():
                                 next(lines, None)
-                            file_charttype = next(lines, None).strip().rstrip(':')
+                            ## ffr r2 pack missing new line...
+                            if len(line.split(":")) == 3:
+                                file_charttype = line.split(":")[1].strip()
+                            else:
+                                file_charttype = next(lines, None).strip().rstrip(':')
                             file_description = next(lines, None).strip().rstrip(":")
                             file_difficulty = next(lines, None).strip().rstrip(":")
                             file_meter = int(float(next(lines, None).strip().rstrip(":")))

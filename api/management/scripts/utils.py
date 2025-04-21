@@ -4,6 +4,8 @@ Helper functions for the scanning packs
 import sys
 import os
 import re
+import requests
+import json
 import shutil
 import subprocess
 import itertools
@@ -172,7 +174,40 @@ def cleanup_dir(directory):
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
 
-def peek(iterator):
-    """Peek at the first item of an iterator without consuming it"""
-    clone, preview = itertools.tee(iterator)
-    return next(preview, None), clone
+def discord_webhook(pack):
+    """sends a post to Discord"""
+    url = os.environ.get("DISCORD_WEBHOOK")
+
+    chart_type_list = '\n'.join(f"• {ct}" for ct in sorted(pack["chart_types"]))
+    name = pack["name"]
+    size = pack["size"]
+    song_count = pack["song_count"]
+
+    embed = {
+        "title": "New Pack Scanned",
+        "color": 3447003,
+        "fields": [
+            {
+                "name": f"**{name} - Size {size}**",
+                "value": f"Contains {song_count} songs",
+            },
+            {
+                "name": "**Chart Types**",
+                "value": chart_type_list or "No charts found",
+            },
+        ],
+    }
+
+    if pack["banner"]:
+        embed["image"] = {
+            "url": f"{os.environ.get('DOMAIN')}/media/images/packs/{pack['banner']}"
+        }
+
+    payload = {
+        "username": "SMO Pack Scanner",
+        "avatar_url": "http://new.stepmaniaonline.net:8000/static/images/logo.png",
+        "embeds": [embed]
+    }
+
+    requests.post(url, json=payload)
+
