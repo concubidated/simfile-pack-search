@@ -16,7 +16,6 @@ import imageio
 import imageio.v3 as iio
 from PIL import Image
 
-
 def convert_seconds(seconds):
     """Converts seconds into human readable format"""
     seconds = round(seconds)  # Round to the nearest second
@@ -39,10 +38,22 @@ def print_warning(string):
     reset = '\033[0m'
     print(f"{warning}{string}{reset}")
 
-def unzip(file, path):
-    """Simple unzip wrapper"""
-    with zipfile.ZipFile(file, 'r') as zip_ref:
-        zip_ref.extractall(path)
+def unzip(zip_path, extract_to):
+    """Unzip using zipfile. If it fails (e.g., path too long), fallback to system unzip."""
+    try:
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_to)
+        return
+    except (OSError, zipfile.BadZipFile) as e:
+        print_warning(f"⚠️ Python unzip failed: {e}")
+
+    try:
+        subprocess.run(
+            ["unzip", "-q", "-f", zip_path, "-d", extract_to],
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Unzipping failed for {zip_path}") from e
 
 def sha1sum(file):
     """Simple sha1sum wrapper"""
