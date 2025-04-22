@@ -348,13 +348,17 @@ def save_notedata(chart):
                                 file_meter = 1
                         else:
                             #if line is empty, skip it (ECFA 2019 grrr)
-                            if not line.strip():
-                                next(lines, None)
+                            #if line.strip() == "":
+                            #    next(lines, None)
                             ## ffr r2 pack missing new line...
                             if len(line.split(":")) == 3:
                                 file_charttype = line.split(":")[1].strip()
                             else:
-                                file_charttype = next(lines, None).strip().rstrip(':')
+                                line = next(lines, None).strip()
+                                if line == "":
+                                    file_charttype = next(lines, None).strip().rstrip(':')
+                                else:
+                                    file_charttype = line.strip().rstrip(':')
                             file_description = next(lines, None).strip().rstrip(":")
                             file_difficulty = next(lines, None).strip().rstrip(":")
                             file_meter = int(float(next(lines, None).strip().rstrip(":")))
