@@ -12,6 +12,7 @@ import hashlib
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
+import lz4.block
 import requests
 import imageio
 import imageio.v3 as iio
@@ -55,6 +56,11 @@ def unzip(zip_path, extract_to):
         )
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Unzipping failed for {zip_path}") from e
+
+def lz4_decompress(blob: bytes, original_size: int) -> bytes:
+    """decompress the LZ4 data using block decompression"""
+    decompressed_data = lz4.block.decompress(blob, uncompressed_size=original_size)
+    return decompressed_data
 
 def sha1sum(file):
     """Simple sha1sum wrapper"""
