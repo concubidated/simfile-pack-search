@@ -4,7 +4,6 @@ Helper functions for the scanning packs
 import sys
 import os
 import re
-import requests
 import json
 import shutil
 import subprocess
@@ -13,7 +12,7 @@ import hashlib
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
-import lz4.block
+import requests
 import imageio
 import imageio.v3 as iio
 from PIL import Image
@@ -157,11 +156,6 @@ def optimize_gif(banner_path):
     except subprocess.CalledProcessError as e:
         print(f"Error optimizing {banner_path}: {e}")
 
-def lz4_decompress(blob: bytes, original_size: int) -> bytes:
-    """Decompress the LZ4 data using block decompression"""
-    decompressed_data = lz4.block.decompress(blob, uncompressed_size=original_size)
-    return decompressed_data
-
 def cleanup_dir(directory):
     """Remove all files and folders in a directory"""
     for filename in os.listdir(directory):
@@ -180,13 +174,13 @@ def discord_webhook(pack):
 
     chart_type_list = '\n'.join(f"• {ct}" for ct in sorted(pack["chart_types"]))
     name = pack["name"]
-    id = pack["id"]
+    pack_id = pack["id"]
     size = pack["size"]
     song_count = pack["song_count"]
+    download_url = f"https://{os.environ.get('DOMAIN')}/download/pack/{pack_id}"
 
     embed = {
         "title": "New Pack Added",
-        "url": f"https://{os.environ.get('DOMAIN')/download/pack/{id}}",
         "color": 3447003,
         "fields": [
             {
@@ -196,6 +190,10 @@ def discord_webhook(pack):
             {
                 "name": "**Chart Types**",
                 "value": chart_type_list or "No charts found",
+            },
+            {
+                "name": "📥 Download",
+                "value": f"[Click here to download]({download_url})"
             },
         ],
     }
@@ -211,5 +209,4 @@ def discord_webhook(pack):
         "embeds": [embed]
     }
 
-
-    requests.post(url, json=payload)
+    requests.post(url, json=payload, timeout=10)

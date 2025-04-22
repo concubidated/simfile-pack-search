@@ -25,7 +25,8 @@ from api.management.scripts import sqlite_query, data_import, chart_parse, utils
 working_path = os.getenv('OUTFOX_WORKING_PATH', './working')
 outfox_song_path = os.path.join(working_path, 'Songs')
 outfox_cache_path = os.path.join(working_path, 'Cache')
-DOCKER_PATH = "registry.digitalocean.com/outfox-containers/cache-builder"
+#DOCKER_PATH = "registry.digitalocean.com/outfox-containers/cache-builder"
+DOCKER_PATH = "concubidated/outfox-cache:latest"
 
 class Command(BaseCommand):
     """DJango Management Command scan_packs"""
@@ -248,15 +249,16 @@ class Command(BaseCommand):
 
 
             # post to discord
-            message = {}
-            message["id"] = pack.id
-            message["name"] = pack.name
-            message["size"] =  humanize.naturalsize(pack.size)
-            message["song_count"] = len(songs)
-            if pack.banner:
-                message["banner"] = pack.banner
-            message["chart_types"] = pack.style
-            utils.discord_webhook(message)
+            if os.environ.get("DISCORD_WEBHOOK"):
+                message = {}
+                message["id"] = pack.id
+                message["name"] = pack.name
+                message["size"] =  humanize.naturalsize(pack.size)
+                message["song_count"] = len(songs)
+                if pack.banner:
+                    message["banner"] = pack.banner
+                message["chart_types"] = pack.style
+                utils.discord_webhook(message)
 
             # remove the pack from the working directory before moving on to the next one
             shutil.rmtree(fullpath)
