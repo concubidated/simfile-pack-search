@@ -4,6 +4,7 @@ from django.utils import timezone
 
 class PackStyle(models.TextChoices):
     """PackStyles are the different play styles of the packs"""
+    PAD = 'pad'
     DDR = 'ddr'
     ITG = 'itg'
     KEYBOARD = 'keyboard'
@@ -25,6 +26,7 @@ class PackSync(models.TextChoices):
     NINE = '9ms'
     OTHER = 'other'
     MIXED = 'mixed'
+    NA = "n/a"
 
 class PackMinVersion(models.TextChoices):
     """PackMinVersion is the oldest client that can play the pack"""
@@ -48,7 +50,7 @@ class Pack(models.Model):
     substyle = models.CharField(max_length=32, choices=PackSubStyle.choices, blank=True, null=True)
     sync = models.CharField(max_length=32,
                             choices=PackSync.choices,
-                            default=PackSync.NULL,
+                            default=PackSync.NA,
                             null=True)
     extras = models.BooleanField()
     min_version = models.CharField(max_length=32,
