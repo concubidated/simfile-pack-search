@@ -50,7 +50,8 @@ class Command(BaseCommand):
         shutil.rmtree(outfox_song_path, ignore_errors=True)
         os.makedirs(outfox_song_path, exist_ok=True)
 
-        for pack_path in packlist:
+        start_index = 0
+        for i, pack_path in enumerate(packlist[start_index:], start=start_index):
             filename = pack_path.split('/')[-1]
             name, extension = os.path.splitext(filename)
             # only support zips, I don't wanna activate winrar
@@ -79,14 +80,19 @@ class Command(BaseCommand):
                 pass
 
             # lets do the thing
-            utils.unzip(pack_path, outfox_song_path)
+            if utils.check_zip(pack_path, outfox_song_path):
+                utils.print_warning(f"{i}: {pack_path} skipped, directory path wrong")
+                continue
+
+            if not utils.unzip(pack_path, outfox_song_path):
+                continue
             if not os.path.exists(fullpath):
-                utils.print_warning(f"{pack_path} skipped, directory path wrong")
+                utils.print_warning(f"{i}: {pack_path} skipped, directory path wrong")
                 utils.cleanup_dir(outfox_song_path)
                 continue
             pack_hash = utils.sha1sum(pack_path)
             size = os.stat(pack_path).st_size
-            date_mtime = datetime.datetime.fromtimestamp(os.stat(pack_path).st_mtime)
+            #date_mtime = datetime.datetime.fromtimestamp(os.stat(pack_path).st_mtime)
 
             print(name, humanize.naturalsize(size))
 
@@ -120,11 +126,12 @@ class Command(BaseCommand):
             # packname, filesized, scanned, banner, date, scanned,
             # pack.ini will have some of that too
 
+            pack_date = utils.get_newest_zip_file_date(pack_path)
             try:
                 pack, _ = Pack.objects.get_or_create(
                     name=name,
                     size=size,
-                    date_created=date_mtime,
+                    date_created=pack_date,
                     sha1sum=pack_hash,
                     scanned=False,
                     extras=found_extra,
@@ -151,10 +158,16 @@ class Command(BaseCommand):
                                         check=False
                                     ).returncode
             except subprocess.CalledProcessError as e:
-                raise SystemExit(f"Error: {e.stderr}") from e
+                utils.cleanup_dir(outfox_song_path)
+                utils.print_warning(f"Failed to Scan {pack.name}")
+                continue
+                #raise SystemExit(f"Error: {e.stderr}") from e
 
             if rc != 0:
-                raise SystemExit("OutFox failed to run - error code:", rc)
+                utils.cleanup_dir(outfox_song_path)
+                utils.print_warning(f"Failed to Scan {pack.name}")
+                #raise SystemExit("OutFox failed to run - error code:", rc)
+                continue
 
             # now we have a Cache/song.db file we can parse to create the songs and charts
             out = sqlite_query.fetch_song_chart_data(f"{outfox_cache_path}/song.db")
@@ -239,7 +252,11 @@ class Command(BaseCommand):
             # lets actually store all of the notedata for cool stuff like chart previews
             charts = Chart.objects.filter(song__pack=pack)
             for chart in charts:
-                save_notedata(chart)
+                try:
+                    save_notedata(chart)
+                except Exception as e:
+                    utils.print_warning(f"Error: save_notedata(): {e}")
+                    continue
 
             pack.types = sorted(list(styletype))
             pack.style = sorted(list(charttype))
@@ -303,7 +320,6 @@ def save_notedata(chart):
             is_ssc = True
         chart_path = working_path + chart_filename
         if os.path.exists(chart_path):
-            print(chart_path)
             lines = read_lines_decoded(chart_path)
             # pull all of the notedata out and store it in the db
             for line in lines:
@@ -321,8 +337,7 @@ def save_notedata(chart):
                             if next_line:
                                 next_line = next_line.strip()
                             else:
-                                print(f"{chart_path}: {next_line}")
-                                sys.exit()
+                                continue
                             if next_line.startswith("#STEPSTYPE:"):
                                 file_charttype = next_line[len("#STEPSTYPE:"):].strip(';').strip()
                             elif next_line.startswith("#DIFFICULTY:"):
@@ -331,7 +346,7 @@ def save_notedata(chart):
                                 file_meter = int(
                                     float(next_line[len("#METER:"):].strip(';').strip())
                                     )
-                            elif next_line.startswith("#NOTES:"):
+                            elif next_line.startswith("#NOTES"): #NOTES or #NOTES2
                                 meta_found = True
                                 break
                 else:
@@ -347,21 +362,18 @@ def save_notedata(chart):
                             else:
                                 file_meter = 1
                         else:
-                            #if line is empty, skip it (ECFA 2019 grrr)
-                            #if line.strip() == "":
-                            #    next(lines, None)
                             ## ffr r2 pack missing new line...
                             if len(line.split(":")) == 3:
                                 file_charttype = line.split(":")[1].strip()
                             else:
                                 line = next(lines, None).strip()
                                 if line == "":
-                                    file_charttype = next(lines, None).strip().rstrip(':')
+                                    file_charttype = next(lines, None).split(':')[0].strip()
                                 else:
-                                    file_charttype = line.strip().rstrip(':')
-                            file_description = next(lines, None).strip().rstrip(":")
-                            file_difficulty = next(lines, None).strip().rstrip(":")
-                            file_meter = int(float(next(lines, None).strip().rstrip(":")))
+                                    file_charttype = line.split(':')[0].strip()
+                            file_description = next(lines, None).split(':')[0].strip()
+                            file_difficulty = next(lines, None).split(':')[0].strip()
+                            file_meter = int(float(next(lines, None).split(':')[0].strip()))
                         meta_found = True
 
                 if meta_found:
@@ -392,7 +404,7 @@ def save_notedata(chart):
                             line = next(lines, None)
                             # Simfile  corrupt, lame.
                             if line is None:
-                                print("chart ended early")
+                                utils.print_warning("chart ended early")
                                 break
                             notedata += line
                             notedata += '\n'
@@ -434,6 +446,8 @@ def read_lines_decoded(file_path):
     encoding = result['encoding']
 
     if encoding == "Windows-1252":
+        encoding = "utf-8"
+    if encoding == "EUC-TW":
         encoding = "utf-8"
 
     decoded_data = raw_data.decode(encoding, errors='replace')

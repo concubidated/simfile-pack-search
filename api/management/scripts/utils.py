@@ -10,6 +10,7 @@ import subprocess
 import itertools
 import hashlib
 import zipfile
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 import lz4.block
@@ -40,22 +41,41 @@ def print_warning(string):
     reset = '\033[0m'
     print(f"{warning}{string}{reset}")
 
+
+def check_zip(zip_path, expected_folder):
+    """Check if zip contents are correct before unzipping"""
+    if not zipfile.is_zipfile(zip_path):
+        return False
+
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            contents = zip_ref.namelist()
+
+            folder_prefix = expected_folder.rstrip('/') + '/'
+
+            return any(entry.startswith(folder_prefix) for entry in contents)
+
+    except (zipfile.BadZipFile, IOError):
+        return False
+
 def unzip(zip_path, extract_to):
     """Unzip using zipfile. If it fails (e.g., path too long), fallback to system unzip."""
     try:
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_to)
-        return
+        return True
     except (OSError, zipfile.BadZipFile) as e:
-        print_warning(f"⚠️ Python unzip failed: {e}")
+        print_warning(f"⚠️ Unzip failed falling back to 7z: {e}")
 
     try:
         subprocess.run(
-            ["unzip", "-q", "-f", zip_path, "-d", extract_to],
+            ["unzip", "-f", "-q", zip_path, "-d", extract_to],
             check=True
         )
+        return True
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Unzipping failed for {zip_path}") from e
+        print_warning(f"Unzipping failed for {zip_path}")
+        return False
 
 def lz4_decompress(blob: bytes, original_size: int) -> bytes:
     """decompress the LZ4 data using block decompression"""
@@ -216,3 +236,26 @@ def discord_webhook(pack):
     }
 
     requests.post(url, json=payload, timeout=10)
+
+def get_newest_zip_file_date(zip_path, n=5):
+    """Get the newest date from the files in a zip archive."""
+    dates = []
+
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+        for info in zf.infolist():
+            if info.is_dir():
+                continue
+            if '/' not in info.filename:
+                continue  # Skip root-level files if needed
+
+            file_date = datetime(*info.date_time)
+            dates.append(file_date)
+
+    if not dates:
+        return None
+
+    # Sort from newest to oldest
+    dates.sort(reverse=True)
+
+    # Return N-th newest if enough, else return the oldest
+    return dates[n - 1] if len(dates) >= n else dates[-1]
