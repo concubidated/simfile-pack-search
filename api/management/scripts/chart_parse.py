@@ -105,12 +105,13 @@ def parse_ssc_data(data):
     if isinstance(data, bytes):
         result = chardet.detect(data)
         # ugh, annoying
-        if result['encoding'] == "Windows-1252":
-            result['encoding'] = "utf-8"
-        if result['encoding'] == "EUC-TW":
+        overrides = {"Johab", "ISO-8859-1", "MacRoman", "GB2312", "Windows-1252", "EUC-TW"}
+
+        if result['encoding'] is None or result['encoding'] in overrides:
             result['encoding'] = "utf-8"
         data = data.decode(result['encoding'], errors='replace')
 
+        #print(result['encoding'])
     lines = data.splitlines()
 
     # Initialize song variables
