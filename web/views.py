@@ -69,7 +69,7 @@ def search(request, search_type=None, search_query=None):
     if search_type not in valid_types:
         return redirect("/")
 
-    charts_qs = Chart.objects.only("meter", "difficulty", "charttype")
+    charts_qs = Chart.objects.only("meter", "difficulty", "charttype", "song_id")
     songs = None
     if "title" in search_type:
         songs = (
