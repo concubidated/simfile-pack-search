@@ -167,7 +167,6 @@ def convert_video_to_gif(banner_path):
         #print(f"GIF saved: {banner_path}")
     else:
         print(f"GIF has no frames: {banner_path}")
-        sys.exit()
 
 def optimize_gif(banner_path):
     """Run gifsicle to reduce the size"""
