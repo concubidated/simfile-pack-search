@@ -74,7 +74,7 @@ def unzip(zip_path, extract_to):
         )
         return True
     except subprocess.CalledProcessError as e:
-        print_warning(f"Unzipping failed for {zip_path}")
+        print_warning(f"Unzipping failed for {zip_path}\nError: {e}")
         return False
 
 def lz4_decompress(blob: bytes, original_size: int) -> bytes:

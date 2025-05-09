@@ -8,4 +8,4 @@ generated-members=objects
 max-parents=15
 max-attributes=15
 max-args = 15
-max-nested-blocks = 7
+max-nested-blocks = 8

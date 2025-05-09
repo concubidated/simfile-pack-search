@@ -159,7 +159,7 @@ class Command(BaseCommand):
                                     ).returncode
             except subprocess.CalledProcessError as e:
                 utils.cleanup_dir(outfox_song_path)
-                utils.print_warning(f"Failed to Scan {pack.name}")
+                utils.print_warning(f"Failed to Scan {pack.name}\nError: {e}")
                 continue
                 #raise SystemExit(f"Error: {e.stderr}") from e
 
