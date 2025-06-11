@@ -281,7 +281,7 @@ class Command(BaseCommand):
             shutil.rmtree(fullpath)
 
             # move zip file to data folder
-            #shutil.move(pack_path, f"/data/packs/{filename}")
+            shutil.move(pack_path, f"/data/packs/{filename}")
 
         end_time = time.time()  # End timer
         elapsed_time = end_time - start_time
