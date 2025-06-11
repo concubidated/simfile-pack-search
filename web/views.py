@@ -257,6 +257,7 @@ def chart_list(request, songid):
 
     context = {
         "song": song,
+        "charts": charts,
         "min_chart_meter": min_chart_meter,
         "max_chart_meter": max_chart_meter,
         "pack": pack,
