@@ -61,7 +61,7 @@
             {% for pack in packs %}
             {% if pack.types|length != 0 %}
 		    <tr>
-                <td><img loading="lazy" class="img-fluid rounded" style="max-height:50px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
+                <td><img class="lazy-img img-fluid rounded" style="max-height:50px;" data-src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
                 <td class="small"><a class="text-blue text-decoration-none fw-medium" href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></td>
                 <td data-sort="{{ pack.size }}" class="small text-center text-gray-300">{{ pack.size|filesizeformat }}</td>
                 <td class="small text-center text-gray-300">{{ pack.song_count }}</td>
@@ -86,7 +86,31 @@
 
 {% block scripts %}
 <script>
+
+function lazyLoadImages() {
+    const images = document.querySelectorAll('img.lazy-img:not([data-loaded])');
+
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.getAttribute('data-src');
+                img.setAttribute('data-loaded', 'true');
+                img.classList.remove('lazy-img');
+                obs.unobserve(img);
+            }
+        });
+    }, {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1
+    });
+
+    images.forEach(img => observer.observe(img));
+}
+
 $(document).ready(function() {
+
     $('#packTable').DataTable({
         dom: '<"dt-controls row px-3 py-2 mb-0"<"col-md-6"l><"col-md-6 text-md-end"f>>t<"dt-footer row mt-3 px-3 pb-3"<"col-md-6"i><"col-md-6 text-md-end"p>>',
         initComplete: function () {
@@ -119,6 +143,10 @@ $(document).ready(function() {
     });
 
     var table = $('#packTable').DataTable();
+    $('#packTable').on('draw.dt', function () {
+        console.log("Table redrawn");
+        lazyLoadImages();
+    });
 
     const hash = window.location.hash.substring(1); // remove #
     const params = new URLSearchParams(hash);
