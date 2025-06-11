@@ -33,7 +33,7 @@
                 <td class="small"><a href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></td>
                 <td class="small text-center text-gray-300"">{{ song.artist|slice:":64" }}</td>
                 <td width="150px" class="small text-center text-gray-300""><a href="/pack/{{ song.pack.id }}">{{ song.pack.name }}</a></td>
-                <td width="150px" class="small text-center text-gray-300"">{% for credit in song.credit %}{{ credit }}<br>{% endfor %}</a></td>
+                <td width="150px" class="small text-center text-gray-300"">{% if song.credit|length < 3 %}{% for credit in song.credit %}{{ credit }}<br>{% endfor %}{% else %}Various{% endif %}</td>
                 <td class="text-center text-gray-300" data-sort="{{ song.charts.all|charttypes }}" width="150px">{% if song.charts.all %}{% load filters %}
                     {% for chart in song.charts.all|charttypes %}
                     <img data-bs-toggle="tooltip" data-bs-placement="top" title="{{ chart }}"  class="img-fluid d-inline-block me-2" style="max-width: 50px;" src="{% static 'images/styles/'|add:chart|add:'.png' %}" alt="{{ chart }}">

@@ -148,7 +148,7 @@
                 <td data-translated="{{ song.subtitletranslit|slice:':64' }}" class="translatable small text-center small text-gray-400">{{ song.subtitle|slice:":64" }}</td>
                 <td class="small text-center text-gray-400">{{ song.song_length_formatted }}</td>
                 <td class="small text-center text-gray-400">{{ song.bpms }}</td>
-                <td class="small text-center text-gray-400" style="white-space: pre-line;">{% for credit in song.credit %}{{ credit }}<br>{% endfor %}</td>
+                <td class="small text-center text-gray-400" style="white-space: pre-line;">{% if song.credit|length < 4 %}{% for credit in song.credit %}{{ credit }}<br>{% endfor %}{% else %}Various{% endif %}</td>
                 <td data-sort="{{ song.charts.all|charttypes }}" class="text-center">{% if song.charts.all %}
                     {% for chart in song.charts.all|charttypes %}
                     <img data-bs-toggle="tooltip" data-bs-placement="top" title="{{ chart }}" class="img-fluid d-inline-block me-2" style="max-width: 50px; filter: invert(0);" src="{% static 'images/styles/'|add:chart|add:'.png' %}" alt="{{ chart }}">
