@@ -21,6 +21,7 @@
                                     {% if song.banner %}
                                     <img class="img-fluid rounded" src="/media/images/songs/{{ song.banner }}" alt="{{ song.title }}">
                                     {% elif pack.banner %}
+                                    <img class="img-fluid rounded" src="/media/images/packs/{{ pack.banner }}" alt="{{ song.title }}">
                                     {% else %}
                                     <img class="img-fluid rounded" src="/media/images/songs/nobanner.png" alt="No banner available">
                                     {% endif %}
