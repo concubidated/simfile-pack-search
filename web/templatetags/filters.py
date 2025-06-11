@@ -14,6 +14,6 @@ def charttypes(value):
     return list(set(ret))
 
 @register.filter
-def is_new(date_scanned, days=30):
+def is_new(date_scanned, days=14):
     """is this pack new?"""
     return date_scanned > timezone.now() - timedelta(days=days)
