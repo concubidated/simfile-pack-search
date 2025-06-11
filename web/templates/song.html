@@ -12,7 +12,7 @@
                 <div class="col-lg-12 mb-3">
                     <div class="card mb-3">
                         <div class="card-header">
-                            <h5 class="card-title mb-0 d-flex align-items-center"><span class="me-2 text-blue">📦</span>{{ song.title }} - {{ song.artist }}</h5>
+                            <h5 class="card-title mb-0 d-flex align-items-center">{{ song.title }} - {{ song.artist }}</h5>
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
@@ -91,7 +91,7 @@
                             </li>
                             {% endfor %}
                             </ul>
-                            <div class="mt-2 small text-gray-400"><span id="chart-type" class="fw-medium text-white">Dance Single</span></div>
+                            <div class="mt-2 small text-gray-400"><span id="chart-type" class="fw-medium text-white"></span></div>
                         <div class="mt-3">
                             <div>
                                 <div class="d-flex">
@@ -356,7 +356,7 @@ function updateChartInfo(data) {
 
   document.getElementById('chart-author').textContent = data.author || 'Unknown';
   document.getElementById('chart-key').textContent = data.chart_key || 'No key';
-  //document.getElementById('chart-meter').textContent = data.meter;
+  document.getElementById('chart-type').textContent = data.charttype.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());;
   // etc.
 }
 
