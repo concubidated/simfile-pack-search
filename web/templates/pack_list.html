@@ -59,6 +59,7 @@
                     </thead>
             <tbody>
             {% for pack in packs %}
+            {% if pack.types|length != 0 %}
 		    <tr>
                 <td><img loading="lazy" class="img-fluid rounded" style="max-height:50px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
                 <td class="small"><a class="text-blue text-decoration-none fw-medium" href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></td>
@@ -73,6 +74,7 @@
                 <td class="text-center text-gray-300"><a href="{% url 'download_pack' pack.id %}"><strong class="bi bi-download"></strong></a></td>
                 <td data-sort="{{ pack.style }}"></td>
             </tr>
+            {% endif %}
             {% empty %}
             {% endfor %}
             </tbody>
