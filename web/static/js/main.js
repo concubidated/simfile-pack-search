@@ -1,52 +1,93 @@
-function createDensityChart(ctx, data) {
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.map((_, index) => index),
-            datasets: [{
-                data: data,
-                borderColor: 'blue',
-                borderWidth: 0,
-		backgroundColor: 'grey',
-                fill: true,
-                tension: 0.4 // Interpolation mode for smooth curves
-            }]
+let chartInstance = null;
+
+
+function updateChartGraph(data) {
+    const ctx = document.getElementById("chart-density").getContext("2d");
+    const maxTimeInSeconds = 150;  // 2 min 30 sec
+
+    if (window.chartInstance) {
+        window.chartInstance.destroy();
+    }
+
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    // Create gradient fill
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(0, 123, 255, 0.6)');  // top
+    gradient.addColorStop(1, 'rgba(0, 123, 255, 0.1)');  // bottom
+
+    chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+        //labels: data.map((_, i) => i),
+        labels: data.map((_, index) => index),
+        datasets: [{
+            label: '',
+            data: data,
+            fill: true,
+            backgroundColor: gradient,
+            borderWidth: 1,
+            borderColor: 'rgba(0, 123, 255, 0.9)',
+            tension: 0.4,
+            pointRadius: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+        x: {
+            type: 'linear',
+
+            ticks: {
+                color: '#ccc',
+                font: { size: 12 },
+                display: false,
+                //callback: function(value) {
+                //    const minutes = Math.floor(value / 60);
+                //    const seconds = Math.floor(value % 60).toString().padStart(2, '0');
+                //    return `${minutes}:${seconds}`;
+                //},
+            },
+            grid: { display: false },
         },
-        options: {
-            elements: {
-                    point: {
-                            radius: 0,
-                    }
-            },
-            responsive: false,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    display: false // Hides x-axis since labels aren't needed
-                },
-                y: {
-                    display: true, // Hides y-axis for simplicity
-                    //suggestedMax: 15,
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false // No legend for a minimal look
-                }
+        y: {
+            grid: { display: false },
+            beginAtZero: true,
+            ticks: {
+            color: '#ccc',
+            font: { size: 12 },
+            stepSize: 3
             }
         }
+        },
+        plugins: {
+        legend: { display: false },
+        tooltip: {
+            backgroundColor: '#222',
+            titleColor: '#fff',
+            bodyColor: '#fff'
+        }
+        }
+    }
     });
+
+
 }
 
 function checkHashOnLoad() {
     const fragment = window.location.hash.replace('#', ''); // remove the `#`
     if (fragment) {
-        hideOthers(fragment); // call your function with the ID
+        loadChart(fragment); // call your function with the ID
         const $button = $(`#button-${fragment}`);
         if ($button.length) {
             $button.prop('checked', true);
         }
+        return true;
     }
+    return false;
 }
 
 function drawNoteField(chart, zoom) {
@@ -73,7 +114,7 @@ function drawNoteField(chart, zoom) {
     render(canvas, visibleNotes, zoom, chart.charttype);
     canvas.css({
         'transform': `translateY(-${pixelOffset}px)`,
-            'transform-origin': 'top-left'
+        'transform-origin': 'top-left'
     });
 }
 

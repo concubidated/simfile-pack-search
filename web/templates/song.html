@@ -3,207 +3,280 @@
 {% block title %}{{ song.title }} - {{ song.artist }}{% endblock %}
 {% block content %}
 
-<body class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-12 col-md-4 text-center">
-            {% if song.banner %}
-                <img class=" shadow border mb-5 img-fluid" src="/media/images/songs/{{ song.banner }}" alt="{{ song.title }}">
-            {% elif song.pack.banner %}<img class="shawdow border mb-5 img-fluid" src="/media/images/packs/{{ song.pack.banner }}">
-                {% else %}<img loading="lazy" class=" shawdow border mb-5 img-fluid" src="/media/images/packs/nobanner.png"></td>
-            {% endif %}
-        </div>
-        <div class="col-12 col-md-8">
-            <h3>{{ song.title }}</h3>
-            {% if song.subtitle %}
-            <h5>{{ song.subtitle }}</h5>
-            {% endif %}
-            <h5>{{ song.artist }}</h5>
-            <span>{{ song.song_length_formatted }} | {{ song.bpms }} BPM</span><br>
-            <span>Pack: <a href="/pack/{{ pack.id }}"> {{ pack.name }}</a></span>
-            <div id="filterCheckboxes">
-                <label>
-                    {% if translit %}
-                    <input type="checkbox" id="toggleLanguage"> Show Translated Data
-                    {% endif %}
-                </label>
+        <div class="container py-4">
+            <div class="d-flex flex-column flex-md-row gap-3 align-items-start mb-4">
+                <a class="btn btn-link text-blue text-decoration-none p-0" href="/pack/{{ pack.id }}"><span class="me-2">←</span>Back to {{ pack.name }}</a>
             </div>
-        </div>
-    </div>
 
-    <div class="row mt-4 mb-4">
-        <div class="col-12">
-            <span>AVAILABLE MODES</span>
-                <!-- Top-level Tabs (Games) -->
-                <ul class="nav bottom-border" id="styleTabs" role="tablist">
-                {% for style  in style_types %}
-                <li class="nav-item" role="presentation">
-                <button class="nav-link p-1 ml-1 {% if forloop.first %}active{% endif %}"
-                    id="{{ style }}-tab"
-                    data-bs-toggle="tab"
-                    data-bs-target="#{{ style }}"
-                    type="button"
-                    role="tab">
-                <img data-bs-toggle="tooltip" data-bs-placement="top" title="{{ style }}" width="64" class="image-thumbnail" src="/static/images/styles/{{ style }}.png" alt="{{ style }}">
-                </button>
-                </li>
-                {% endfor %}
-                </ul>
-            <hr>
-            {% for style, charts in style_types.items %}
-            <div class="tab-content" id="{{ style }}StyleContent">
-                <div class="tab-pane fade show {% if forloop.first %}active{% else %}{% endif %}" id="{{ style }}" data-toggle="buttons" role="tablist" aria-labelledby="{{ style }}-tab">
-                <!-- Chart buttons -->
-                {% for id, chart in charts.items %}
-                    <input
-                        type="radio"
-                class="btn-check ml-1 {% if chart.difficulty == 'Easy' %}Success
-                    {% elif chart.difficulty == 'Medium' %}Warning
-                    {% elif chart.difficulty == 'Hard' %}Danger
-                    {% elif chart.difficulty == 'Challenge'%}Primary
-                    {% elif chart.difficulty == 'Edit'%}Secondary
-                    {% else %}{% endif %}"
-                        name="btnradio"
-                data-id="#{{ chart.id }}"
-                role="chart"
-                id="button-{{ chart.id }}"
-                        autocomplete="off"
-                        onclick="hideOthers('{{ chart.id }}')"
-                {% if forloop.first %}{% if forloop.parentloop.first %}checked{% endif %}{% endif %}>
-                        <label class="btn mb-1 btn-sm btn-outline-{% if chart.difficulty == 'Easy' %}success
-                    {% elif chart.difficulty == 'Medium' %}warning
-                    {% elif chart.difficulty == 'Hard' %}danger
-                    {% elif chart.difficulty == 'Challenge'%}primary
-                    {% elif chart.difficulty == 'Edit'%}secondary
-                    {% else %}info{% endif %}" for="button-{{ chart.id }}">{{ chart.difficulty }} {{ chart.meter }}</label>
-                    {% endfor %}
+            <div class="row mt-4">
+                <div class="col-lg-12 mb-3">
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0 d-flex align-items-center"><span class="me-2 text-blue">📦</span>{{ song.title }} - {{ song.artist }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                <div class="mt-2">
+                                    {% if song.banner %}
+                                    <img class="img-fluid rounded" src="/media/images/songs/{{ song.banner }}" alt="{{ song.title }}">
+                                    {% elif pack.banner %}
+                                    {% else %}
+                                    <img class="img-fluid rounded" src="/media/images/songs/nobanner.png" alt="No banner available">
+                                    {% endif %}
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'download_pack' pack.id %}" class="btn btn-primary w-100 mt-3"><span class="me-2">⬇️</span>Download Pack</a>
+                                        <a href="{% url 'download_mirror' pack.id %}" class="btn btn-primary w-100 mt-3"><span class="me-2">⬇️</span>Mirror</a>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row mb-3 g-2">
+                                        {% if song.subtitle %}
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Subtitle</small>
+                                                <div class="fs-5 fw-medium text-white">{{ song.subtitle }}</div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Duration</small>
+                                                <div class="fs-5 fw-medium text-white">{{ song.song_length_formatted }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">BPM</small>
+                                                <div class="fs-5 fw-medium text-white">{{ song.bpms }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Number of Charts</small>
+                                                <div class="fs-5 fw-medium text-white">{{ charts | length }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Difficulty</small>
+                                                <div class="fs-5 fw-medium text-white">{{ min_chart_meter }} - {{ max_chart_meter }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                <div class="card mb-4">
+                    <div class="card-header"><h5 class="card-title text-white mb-0">Available Modes</h5></div>
+                    <div class="card-body">
+                            <ul class="nav nav-pills gap-2" id="styleTabs" role="tablist">
+                            {% for style in style_types %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link p-0 border-0 bg-transparent {% if forloop.first %}active{% endif %}"
+                                        id="{{ style }}-tab"
+                                        data-bs-toggle="tab"
+                                        data-bs-target="#{{ style }}"
+                                        type="button"
+                                        role="tab"
+                                        aria-controls="{{ style }}"
+                                        aria-selected="{{ forloop.first|yesno:'true,false' }}">
+                                <img src="/static/images/styles/{{ style }}.png"
+                                    class="img-thumbnail style-icon"
+                                    alt="{{ style }}" title="{{ style }}" width="64" height="64">
+                                </button>
+                            </li>
+                            {% endfor %}
+                            </ul>
+                            <div class="mt-2 small text-gray-400"><span id="chart-type" class="fw-medium text-white">Dance Single</span></div>
+                        <div class="mt-3">
+                            <div>
+                                <div class="d-flex">
+                                {% for style, charts in style_types.items %}
+                                <div class="tab-content" id="{{ style }}StyleContent">
+                                    <div class="tab-pane p-0 fade show {% if forloop.first %}active{% else %}{% endif %}" id="{{ style }}" data-toggle="buttons" role="tablist" aria-labelledby="{{ style }}-tab">
+                                    <!-- Chart buttons -->
+                                    {% for id, chart in charts.items %}
+                                        <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="btnradio"
+                                            data-id="#{{ chart.id }}"
+                                            data-chart-id="{{ chart.id }}" 
+                                            role="chart"
+                                            id="button-{{ chart.id }}"
+                                            autocomplete="off"
+                                            onclick="loadChart('{{ chart.id }}')"
+                                            {% if forloop.first %}{% if forloop.parentloop.first %}checked{% endif %}{% endif %}>
+                                        <label class="
+                                            btn btn-sm {% if chart.difficulty == 'Easy' %}btn-outline-success
+                                            {% elif chart.difficulty == 'Medium' %}btn-outline-warning
+                                            {% elif chart.difficulty == 'Hard' %}btn-outline-danger
+                                            {% elif chart.difficulty == 'Challenge'%}btn-outline-primary
+                                            {% elif chart.difficulty == 'Edit'%}btn-outline-secondary
+                                            {% else %}btn-outline-info{% endif %}" for="button-{{ chart.id }}">{{ chart.difficulty }} {{ chart.meter }}</label>
+                                    {% endfor %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Info -->
+                <div class="row">
+                    <div class="col-md-6 d-flex">
+                        <div class="card mb-4 w-100">
+                            <div class="card-header">
+                                <h5 class="card-title text-white mb-0 d-flex align-items-center">Chart Statistics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-1">
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-1 rounded text-center" style="background-color: rgba(55, 65, 81, 0.5);">
+                                            <small class="text-gray-400 small">Total Notes</small>
+                                            <div id="stats-total" class="fs-4 fw-medium text-white">601</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-1 rounded text-center" style="background-color: rgba(55, 65, 81, 0.5);">
+                                            <small class="text-gray-400">Taps</small>
+                                            <div id="stats-taps" class="fs-4 fw-medium text-white">518</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-1 rounded text-center" style="background-color: rgba(55, 65, 81, 0.5);">
+                                            <small class="text-gray-400">Jumps</small>
+                                            <div id="stats-jumps" class="fs-4 fw-medium text-white">83</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-1 rounded text-center" style="background-color: rgba(55, 65, 81, 0.5);">
+                                            <small class="text-gray-400">Holds</small>
+                                            <div id="stats-holds" class="fs-4 fw-medium text-white">202</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr class="border-secondary" />
+                                <div class="row g-1">
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-1 rounded text-center" style="background-color: rgba(55, 65, 81, 0.5);">
+                                            <small class="text-gray-400 small">Hands</small>
+                                            <div id="stats-hands" class="fs-4 fw-medium text-white">0</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-1 rounded text-center" style="background-color: rgba(55, 65, 81, 0.5);">
+                                            <small class="text-gray-400">Mines</small>
+                                            <div id="stats-mines" class="fs-4 fw-medium text-white">10</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-1 rounded text-center" style="background-color: rgba(55, 65, 81, 0.5);">
+                                            <small class="text-gray-400">Rolls</small>
+                                            <div id="stats-rolls" class="fs-4 fw-medium text-white">0</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="p-1 rounded text-center" style="background-color: rgba(55, 65, 81, 0.5);">
+                                            <small class="text-gray-400">Lifts</small>
+                                            <div id="stats-lifts" class="fs-4 fw-medium text-white">0</div>
+                                        </div>
+                                    </div>
+                                </div>  
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex">
+                        <div class="card mb-4 w-100">
+                            <div class="card-header">
+                                <h5 class="card-title text-white mb-0 d-flex align-items-center">Chart Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-1">
+                                    <div class="col-md-12">
+                                        <h6 class="small fw-medium text-gray-400 mb-2">Author</h6>
+                                        <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.3);"><p id="chart-author" class="small text-gray-300 mb-0 text-truncate"></p></div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <h6 class="small fw-medium text-gray-400 mb-2">Chart Key</h6>
+                                        <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.3);"><p id="chart-key" class="small text-gray-300 mb-0 text-truncate"></p></div>
+                                    </div>
+                                    <div id="common-packs-container" class="col-md-12"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Density Graph -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title text-white mb-0 d-flex align-items-center">Note Density Chart</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-details"> 
+                                    <div class="chart-container mb-2">
+                                        <canvas id="chart-density"></canvas>
+                                    </div>
+                                    <div class="row justify-content-between align-items-start align-items-md-center">
+                                        <div class="col-md-8">
+                                            <p class="small text-gray-300 mb-1">Notes Per Second</p>
+                                            <div class="d-flex align-items-center gap-4">
+                                                <div class="d-flex align-items-center gap-1"><span class="small text-gray-400">Average:</span><span id="nps-avg" class="small fw-medium text-white"></span></div>
+                                                <div class="d-flex align-items-center gap-1"><span class="small text-gray-400">Peak:</span><span id="nps-peak" class="small fw-medium text-white"></span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Chart Viewer -->
+                <div class="row">
+                    <div class="d-flex justify-content-center">
+                        <div class="card w-auto center mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title w-auto text-white mb-0 d-flex align-items-center">Chart Preview</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="chart-viewer" class="col-12 d-flex flex-column align-items-center align-items-md-start text-center text-md-start">
+                                <div id="render" class="render">
+                                    <div id="scrollbar-notes" class="scrollbar-notes">
+                                        <div id="fake-scroll" class="fake-scroll"></div>
+                                    </div>
+                                    <canvas id="notefield"></canvas>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <label class="small text-gray-400">Zoom Level</label><span id="zoom-value" class="small text-gray-400">8</span></div>
+                                    <input type="range" id="zoom-slider" min="1" max="16" value="8" step=".1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </div>
 
-<div id="chart-details" class="row">
-    {% for chart in charts %}
-    <div 
-        id="collapse-{{ chart.id }}"
-	    class="col-12 col-md-6 collapse {% if forloop.first %}show{% endif %} mb-2"
-        >
-            <span>Notes Per Second</span><br>
-			<span>Peak: {{ chart.npspeak|floatformat:2}}</span><br>
-            <span>Average: {{ chart.npsavg|floatformat:2}}</span>
-
-			<div class="ratio ratio-21x9 mb-4">
-                            <canvas class="mb-4 w-100 h-100" id="chart-{{ chart.id }}" style="display: block; box-sizing: border-box;"></canvas>
-			</div>
-			<div class="col-12 col-md-6">
-			<table class="mb-4 table table-sm table-borderless">
-			<tr>
-				<td>Chart Author</td>
-				<td>{{ chart.author}}</td>
-			</tr>
-			</table>
-			</div>
-
-			<div class="row">
-			  <div class="col-6 col-md-6">
-			    <table class="table table-sm">
-			      <tr>
-			        <td>Total Notes</td>
-				<td>{{ chart.taps.total }}</td>
-			      </tr>
-			      <tr>
-			        <td>Taps</td>
-				<td>{{ chart.taps.taps }}</td>
-			      </tr>
-			      <tr>
-			        <td>Jumps</td>
-				<td>{{ chart.taps.jumps }}</td>
-			      </tr>
-			      <tr>
-			        <td>Holds</td>
-				<td>{{ chart.taps.holds }}</td>
-			      </tr>
-			      <tr>
-			        <td>Mines</td>
-				<td>{{ chart.taps.mines }}</td>
-			      </tr>
-			    </table>
-			  </div>
-			  <div class="col-6 col-md-6">
-			  <table class="table table-sm">
-			      <tr>
-			        <td>&nbsp;</td>
-			      </tr>
-			      <tr>
-			        <td>Hands</td>
-				<td>{{ chart.taps.hands }}</td>
-			      </tr>
-			      <tr>
-			        <td>Rolls</td>
-				<td>{{ chart.taps.rolls }}</td>
-			      </tr>
-			      <tr>
-			        <td>Lifts</td>
-				<td>{{ chart.taps.lifts }}</td>
-			      </tr>
-			      <tr>
-			        <td>Fakes</td>
-				<td>{{ chart.taps.fakes }}</td>
-			      </tr>
-			    </table>
-			    </div>
-			</div>
-            <div class="col-12 col-md-12">
-			<table class="table table-sm table-borderless">
-			<tr>
-				<td>Chart Key</td>
-				<td>{{ chart.chartkey }}</td>
-			</tr>
-			</table>
-            </div>
-			<hr>
-			{% if chart.common_packs.count > 1 %}
-			<span>Other Packs</span>
-			<table class="table table-sm">
-                            {% for common_pack in chart.common_packs %}
-			    <tr>
-                            {% if common_pack.id != pack.id %}
-			    <tr>
-                                <td>{{ common_pack.name }}</td>
-			        <td><a href="/pack/{{ common_pack.id }}">Download</a></td> 
-				</tr>
-                            {% endif %}
-                            {% endfor %}
-
-			</table>
-			{% else %}
-			<span>This chart is not found in any other packs</span>
-			{% endif %}
-	</div>
-    {% endfor %}
-    <div class="d-block d-md-none">
-        <hr>
-      </div>
-    <div id="chart-viewer" class="col-12 col-md-6 d-flex flex-column align-items-center align-items-md-start text-center text-md-start">
-        <span>Chart Viewer</span>
-	    <div id="render" class="render">
-	        <div id="scrollbar-notes" class="scrollbar-notes">
-		    <div id="fake-scroll" class="fake-scroll"></div>
-		    </div>
-            <canvas id="notefield"></canvas>
-        </div>
-	    <label for="zoom-slider">Zoom: </label>
-	    <input type="range" id="zoom-slider" min="1" max="16" value="8" step=".1">
-		<span id="zoom-value">8</span>
-    </div>
-</div>
 
 {% endblock content %}
 
 {% block scripts %}
-<script src="{% static 'js/chartviewtest.js' %}"></script>
+<script src="{% static 'js/chartview.js' %}"></script>
 <script src="{% static 'js/main.js' %}"></script>
 <script>
+
+window.loadedCharts = {};
 
 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.forEach(function (tooltipTriggerEl) {
@@ -212,68 +285,10 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
     });
 });
 
-{% for chart in charts %}
-	{% if chart.chartdata %}
-        var chart_{{ chart.id }} = {
-            notes: {{ chart.chartdata.data|safe }}, 
-	    charttype: "{{ chart.charttype }}",
-	    width: {{ chart.notefield_width }}
-        };
-    {% else %}
-        var chart_{{ chart.id }} = null;
-	{% endif %}
-{% endfor %}
-
 let chartData = null;
 let canvas = $('#render canvas');
 let chartId = null;
 var zoom = 8;
-
-function hideOthers(currentId) {
-    chartId = currentId;
-    const allCollapses = document.querySelectorAll('#chart-details .collapse');
-    const currentCollapse = document.getElementById(`collapse-${currentId}`);
-    const currentInstance = bootstrap.Collapse.getOrCreateInstance(currentCollapse, { toggle: false });
-
-    // If the current one is already shown, don't collapse it
-    const isAlreadyVisible = currentCollapse.classList.contains('show');
-
-    // Hide all others
-    allCollapses.forEach(collapseEl => {
-        const id = collapseEl.id.split('collapse-')[1];
-        const instance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
-        if (id !== currentId) {
-            instance.hide();
-        }
-    });
-
-    // Only show it if it wasn't already visible
-    if (!isAlreadyVisible) {
-        currentInstance.show();
-    }
-
-    // Render chart on open
-    const chartVarName = `chart_${currentId}`;
-    chartData = window[chartVarName];
-    if (chartData) {
-        const columns = chartData.notes[0][1][0].length;
-        if (columns < 6) {
-            chartData.width = columns * 64;
-        }
-        canvas[0].width = chartData.width;
-        canvas.css('width', chartData.width + 'px');
-        $('#render').width(chartData.width+10);
-        drawNoteField(chartData, zoom);
-    } else {
-        // If there is no chartdata, lets just hide the viewer
-        console.log("HIDE ME");
-        $('#chart-viewer').children().hide();
-        $('#render').hide();
-        canvas.hide();
-    }
-}
-
-
 
 // Update on scroll
 $(`.scrollbar-notes`).on('scroll', function() {
@@ -287,36 +302,133 @@ $('#zoom-slider').on('input', function() {
 	var zoomSpanId = $('#zoom-value');  // Use the correct selector for your chart
 	zoomSpanId.text(zoom);
 		drawNoteField(chartData, zoom);
-	});
+});
 
+function loadChart(chartId) {
+  if (!window.loadedCharts) window.loadedCharts = {};
 
+  if (window.loadedCharts[chartId]) {
+    renderChartUI(chartId, window.loadedCharts[chartId]);
+  } else {
+    fetch(`/api/chart/${chartId}`)
+      .then(res => res.json())
+      .then(data => {
+        data.npsgraph = JSON.parse(data.npsgraph);  // ensure it's parsed!
+        window.loadedCharts[chartId] = data;
+        renderChartUI(chartId, data);
+      });
+  }
+}
+function updateActiveButton(chartId, data) {
+  const chartType = data.charttype;
 
-$( document ).ready(function() {
-    {% for chart in charts %}
-        const ctx{{ chart.id }} = document.getElementById('chart-{{ chart.id }}');
-        createDensityChart(ctx{{ chart.id }}, {{ chart.npsgraph }});
-    {% endfor %}
+  // Activate the correct tab using Bootstrap's API
+  const tabTrigger = document.querySelector(`button[data-bs-target="#${chartType}"]`);
+  if (tabTrigger) {
+    const bsTab = new bootstrap.Tab(tabTrigger);
+    bsTab.show();  // This sets the tab as active and updates associated tab-pane
+  }
+
+  // Update the chart buttons (radio)
+  $('input[role="chart"]').prop('checked', false); // Uncheck all
+  $(`input[role="chart"][data-chart-id="${chartId}"]`).prop('checked', true);
+}
+
+function renderChartUI(chartId, data) {
+  updateActiveButton(chartId, data);    
+  updateChartGraph(data.npsgraph);
+  updateChartInfo(data);
+  renderCommonPacks(data.common_packs);
+  updateChartVisualizer(data);
+}
+
+function updateChartInfo(data) {
+  document.getElementById('nps-avg').textContent = parseFloat(data.npsavg).toFixed(2);
+  document.getElementById('nps-peak').textContent = parseFloat(data.npspeak).toFixed(2);
+  document.getElementById('stats-total').textContent = data.taps.total;
+  document.getElementById('stats-taps').textContent = data.taps.taps;
+  document.getElementById('stats-holds').textContent = data.taps.holds;
+  document.getElementById('stats-jumps').textContent = data.taps.jumps;
+  document.getElementById('stats-mines').textContent = data.taps.mines;
+  document.getElementById('stats-hands').textContent = data.taps.hands;
+  document.getElementById('stats-rolls').textContent = data.taps.rolls;
+  document.getElementById('stats-lifts').textContent = data.taps.lifts;
+
+  document.getElementById('chart-author').textContent = data.author || 'Unknown';
+  document.getElementById('chart-key').textContent = data.chart_key || 'No key';
+  //document.getElementById('chart-meter').textContent = data.meter;
+  // etc.
+}
+
+function updateChartVisualizer(chart) {
+    chartData = {
+        notes: chart.chartdata, 
+        charttype: chart.charttype,
+        width: chart.chartwidth
+    };
 
     canvas = $('#render canvas')
-    {% with charts|first as initial_chart %}
-        chartId = {{ initial_chart.id }}
-        chartData = chart_{{ initial_chart.id }}
-        if (chartData == null) {
-            $('#chart-viewer').hide();
-        } else {
-            const columns = chartData.notes[0][1][0].length;
-            if (columns < 6) {
-                chartData.width = columns * 64;
-            }
-            canvas[0].width = chartData.width;
-            canvas.css('width', chartData.width + 'px');
-            $('#render').width(chartData.width+10);
-            drawNoteField(chartData, zoom);
+    if (chartData.notes == null) {
+        $('#chart-viewer').hide();
+        chart = null;
+    } else {
+        const columns = chartData.notes[0][1][0].length;
+        if (columns < 6) {
+            chartData.width = columns * 64;
         }
-    {% endwith %}
+        canvas[0].width = chartData.width;
+        canvas.css('width', chartData.width + 'px');
+        $('#render').width(chartData.width+10);
+        drawNoteField(chartData, zoom);
+    }
+}
 
+function renderCommonPacks(packs) {
+  const container = document.getElementById("common-packs-container");
+  container.innerHTML = ""; // Clear previous content
+
+  if (!packs || packs.length <= 1) return;
+
+  const title = document.createElement("h6");
+  title.className = "small fw-medium text-gray-400 mt-3 mb-2";
+  title.textContent = "Also Appears In";
+
+
+  packs.forEach(pack => {
+    const item = document.createElement("div");
+    item.className = "p-2 rounded mb-1";
+    item.style.backgroundColor = "rgba(55, 65, 81, 0.3)";
+
+    const name = document.createElement("p");
+    name.className = "small text-gray-300 mb-0 text-truncate";
+
+    const link = document.createElement("a");
+    link.href = `/pack/${pack.id}`;
+    link.className = "text-grey text-decoration-none";
+    link.textContent = pack.name;
+    link.onclick = function(event) {
+      event.preventDefault(); // Prevent default link behavior
+      window.location.href = `/pack/${pack.id}`; // Redirect to the pack page
+    };
+
+    name.appendChild(link);
+    item.appendChild(name);
+    title.appendChild(item);
+  });
+
+  container.appendChild(title);
+}
+
+
+$(document).ready(function() {
     var url = window.location.href;
-    checkHashOnLoad()
+    if (!checkHashOnLoad()) {
+        const firstChartEl = $('[data-chart-id]').first();
+        if (firstChartEl.length) {
+            const chartId = firstChartEl.data('chart-id');
+            loadChart(chartId);
+      }
+    }
 
     $('input[role="chart"]').on('click', function() {
       const hash = $(this).attr('data-id');

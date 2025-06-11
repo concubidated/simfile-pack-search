@@ -4,141 +4,131 @@
 
 {% block title %}SMO - FAQ{% endblock %}
 {% block content %}
-<body class="container mt-4">
-    <div class="table-responsive">
-    
+    <div class="container py-4">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">FAQ</h1>
+      </div>
+      <a class="btn btn-link text-blue text-decoration-none p-0 mb-3" href="{{ request.META.HTTP_REFERER|default:'/' }}"><span class="me-2">←</span>Back to home</a>
+
+      <div class="table-responsive">
         <div class="accordion" id="faq">
-            <div class="accordion-item">
-              <h2 class="accordion-header" id="headingOne">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                  What is Stepmania / Stepmania Online?
-                </button>
-              </h2>
-              <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#faq">
-                <div class="accordion-body">
-                    <p>Stepmania is cross-platform rhythm game engine originally developed as a clone to Konami's DanceDanceRevolution in 2001.</p>
-                    <p>Stepmania Online (SMO) was an online multiplayer service that let users play Stepmania across the interwebs. After its original shutdown Houkouonchi
-                        and myself rebuilt SMO and ran it for a number of years. After Houkouonchi passed away in 2015 I continued to maintain the project
-                        before finally shutting it down in 2018.</p>
-                    <p>Stepmania Online was one of the main sources for simfiles at the time and I did not want to take that away from the community. I ended up building a parser (poorly) and scanned all 4000+ packs we hosted
-                         along with a website to search and download simfiles. This was suppose to be a temporary site until I could build something better. Fast forward 10 years and the 
-                         original SMO Search is still extremely popular and desperately needed a reboot! So here we are.</p>
-                    </p>
-                </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+              <button class="accordion-button collapsed bg-primary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#stepmania" aria-expanded="false" aria-controls="stepmania">
+                What is Stepmania / Stepmania Online?
+              </button>
+            </h2>
+            <div id="stepmania" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#faq">
+              <div class="accordion-body">
+                <p>Stepmania is cross-platform rhythm game engine originally developed as a clone to Konami's DanceDanceRevolution in 2001.</p>
+                <p>Stepmania Online (SMO) was an online multiplayer service that let users play Stepmania across the interwebs. After its original shutdown Houkouonchi
+                    and myself rebuilt SMO and ran it for a number of years. After Houkouonchi passed away in 2015 I continued to maintain the project
+                    before finally shutting it down in 2018.</p>
+                <p>Stepmania Online was one of the main sources for simfiles at the time and I did not want to take that away from the community. I ended up building a parser (poorly) and scanned all 4000+ packs we hosted
+                     along with a website to search and download simfiles. This was suppose to be a temporary site until I could build something better. Fast forward 10 years and the 
+                     original SMO Search is still extremely popular and desperately needed a reboot! So here we are.</p>
+                </p>
               </div>
             </div>
+          </div>
             <div class="accordion-item">
               <h2 class="accordion-header" id="headingTwo">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                <button class="accordion-button collapsed bg-primary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#how-to" aria-expanded="false" aria-controls="how-to">
                   How can I use these packs?
                 </button>
               </h2>
-              <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faq">
+              <div id="how-to" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faq">
                 <div class="accordion-body">
-                    <p>The files hosted here are meant to be used by a rhythm game client.</p>
-                    <p>While Stepmania is no longer actively developed,
-                        a fork of the game <a href="https://projectoutfox.com" target="_blank">Project Outfox</a> is being heavily worked on to bring this old game into the modern era.
-                        OutFox is the spiritial successor to Stepmania and is the recommended client to use for beginners or people looking to use dance pads / controllers.
-                        <p>It is recommended to use the latest version from thier <a href="https://discord.gg/cN4TjgQdcA" target="_blank">OutFox Discord</a> as the game is in a rapid develpment phase.</p>
-                        <p>For high level keyboard play there is another fork of Stepmania called <a href="https://etternaonline.com" target="_blank">Etterna</a>. The etterna folks have
-                          done a great job helping organize and maintain simfiles packs over the years</p>
-                    </p>
+                  <p>The files hosted here are meant to be used by a rhythm game client.</p>
+                  <p>While Stepmania is no longer actively developed,
+                      a fork of the game <a href="https://projectoutfox.com" target="_blank">Project Outfox</a> is being heavily worked on to bring this old game into the modern era.
+                      OutFox is the spiritial successor to Stepmania and is the recommended client to use for beginners or people looking to use dance pads / controllers.
+                  <p>It is recommended to use the latest version from thier <a href="https://discord.gg/cN4TjgQdcA" target="_blank">OutFox Discord</a> as the game is in a rapid develpment phase.</p>
+                  <p>For high level keyboard play there is another fork of Stepmania called <a href="https://etternaonline.com" target="_blank">Etterna</a>. The etterna folks have
+                      done a great job helping organize and maintain simfiles packs over the years</p>
+                  </p>
                 </div>
               </div>
             </div>
             <div class="accordion-item">
               <h2 class="accordion-header" id="headingThree">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                <button class="accordion-button collapsed bg-primary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#single" aria-expanded="false" aria-controls="single">
                   Can I just download a single simfile?
                 </button>
-              </h2>
-              <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faq">
-                <div class="accordion-body">
+                </h2>
+                <div id="single" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faq">
+                  <div class="accordion-body">
                     <p>Historically Stepmania simfiles have been released as "packs" and after 20+ years, we shall continue that tradition. <a href="https://zenius-i-vanisher.com/v5.2/simfiles.php" target="_blank">
                       Zenius-I-Vanisher</a> offers downloading individual songs, but they typically cator towards DDR style simfiles.</p>
+                  </div>
                 </div>
               </div>
-            </div>
+              <div class="accordion-item">
+              <h2 class="accordion-header" id="headingFour">
+                <button class="accordion-button collapsed bg-primary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#offset" aria-expanded="false" aria-controls="offset">
+                  How come some packs say NULL or 9ms sync?
+                </button>
+                </h2>
+                <div id="offset" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faq">
+                  <div class="accordion-body">
+                    <p><b>TLDR</b> ITG cabs were synced wrong, people had to sync custom packs to play correctly.</p>
+                    <p>For a more detailed explaination read here 
+                      <a href="https://itg.wiki/Sync_Bias" target="_blank">ClubFantastic Wiki - Sync Bias</a></p>
+                    </p>
+                    <p>We have started checking packs for (+9ms offset) and removing it, but this is still an ongoing process.
+                        This is why sync bias is being shown for pad packs.
+                    <p>+9ms pack are inherently wrong and created major issues since the majority of packs are synced correctly (to a NULL offset)</p>
+                    <p>The plan is to eventually fix all the incorrect ITG packs, but will take some time to complete.</p>
+                    <p>As we fix the packs we only adjust the OFFSET field, and do not touch any other metadata
+                        <i>.oldsync</i> files are kept as a form of preservation of the original files. You can restore the originals with a script.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item">
+              <h2 class="accordion-header" id="headingFive">
+                <button class="accordion-button collapsed bg-primary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#report" aria-expanded="false" aria-controls="report">
+                  Where can I report outdated packs or wrong metadata?
+                </button>
+                </h2>
+                <div id="report" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#faq">
+                  <div class="accordion-body">
+                    <p>Come to our discord <a href="https://discord.gg/P5cw8hXTx9" target="_blank">Join Here</a></p>
+                  </div>
+                </div>
+              </div>
+<!-- faq template
+          <div class="accordion-item">
+              <h2 class="accordion-header" id="headingXXX">
+                <button class="accordion-button collapsed bg-primary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseXXX" aria-expanded="false" aria-controls="collapseXXX">
+                  QUESTIONS HERE
+                </button>
+                </h2>
+                <div id="collapseXXX" class="accordion-collapse collapse" aria-labelledby="headingXXX" data-bs-parent="#faq">
+                  <div class="accordion-body">
+                    <p>ANWSER SECTION</p>
+                  </div>
+                </div>
+              </div>
+-->
+  
           </div>
-
-</body>
+        </div>
 {% endblock content%}
 
 {% block scripts %}
 <script>
-$(document).ready(function() {
-    $('#packTable').DataTable({
-        paging: true,
-        searching: true,
-        ordering: true,
-        columnDefs: [{
-            orderable: false,
-            targets: "no-sort"
-            },
-            {
-                target: 8,
-                visible: false
-            }],
-        pageLength: 25,
-        lengthMenu: [25, 50, 100, 200], // Options for rows per page
-        language: {
-            search: "🔍 Search Packs:", // Custom search placeholder
-            lengthMenu: "Show _MENU_ packs per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ packs",
-            infoEmpty: "No packs found",
-            paginate: {
-                previous: "← Previous",
-                next: "Next →"
-            }
-        }
-    });
+$(document).ready(function () {
+  const hash = window.location.hash;
 
-    var table = $('#packTable').DataTable();
+  // 1. Expand if hash matches an accordion collapse ID
+  if (hash && $(hash).hasClass('accordion-collapse')) {
+    const targetCollapse = new bootstrap.Collapse(hash, { toggle: true });
+  }
 
-    // Track active filters
-    let activeFilters = [];
-
-    // Custom filter logic for JSON data-sort field
-    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-        var jsonTypeData = $(table.row(dataIndex).node()).find('td:eq(4)').data('sort');
-
-        try {
-            var packTypes = JSON.parse(jsonTypeData.replace(/'/g, '"')); // Convert to valid JSON format
-        } catch (e) {
-            console.error('Invalid JSON data-sort:', jsonTypeData);
-            return false; // Skip if JSON parsing fails
-        }
-
-        // Show all rows if no filters are active
-        if (activeFilters.length === 0) {
-            return true;
-        }
-
-        // Check for any active filter match
-        return activeFilters.some(filter => packTypes.includes(filter));
-    });
-
-    // Checkbox change logic
-    $('#filterCheckboxes .filter-checkbox').on('change', function () {
-        const filterValue = $(this).val();
-
-        if (this.checked) {
-            activeFilters.push(filterValue);
-        } else {
-            activeFilters = activeFilters.filter(f => f !== filterValue); // Remove if unchecked
-        }
-
-        table.draw(); // Redraw the table with updated filters
-    });
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-    new bootstrap.Tooltip(tooltipTriggerEl, {
-        delay: { show: 0, hide: 100 }  // No delay on hover, quick hide
-        });
-    })
+  // 2. Update URL hash when a section is shown
+  $('.accordion-collapse').on('shown.bs.collapse', function () {
+    history.replaceState(null, null, '#' + this.id);
+  });
 });
 </script>
 

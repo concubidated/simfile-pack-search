@@ -22,7 +22,7 @@ class PackSubStyle(models.TextChoices):
 
 class PackSync(models.TextChoices):
     """PackSync is the offset of the pack"""
-    NULL = '0'
+    NULL = 'null'
     NINE = '9ms'
     OTHER = 'other'
     MIXED = 'mixed'

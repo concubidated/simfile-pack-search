@@ -1,0 +1,198 @@
+{% extends 'base-new.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Stepmania Online Search{% endblock %}
+{% block content %}
+        <div class="container py-4">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-white mb-2">Pack List</h1>
+            </div>
+            <a class="btn btn-link text-blue text-decoration-none p-0" href="/"><span class="me-2">←</span>Back to Home</a>
+            {% include 'components/search-bar-new.html' %}
+
+            {% if styles|length > 1 %}
+            <div class="card mb-3">
+                    <div class="card-header"><h5 class="card-title text-white mb-0">Filter By Type</h5></div>
+                    <div class="card-body">
+                        <div>
+                            <div class="d-flex flex-wrap gap-2" id="styleFilterButtons">
+                                {% for style in styles %}
+                                <button type="button"
+                                        data-style="{{ style }}"
+                                        class="game-mode-btn d-flex align-items-center justify-content-center"
+                                        title="{{ style }}">
+                                    <div class="text-white" style="width: 128px;">
+                                       <img src="/static/images/styles/{{ style }}.png" alt="Dance Single" class="w-100 h-100">
+                                    </div>
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>  
+                    </div>
+                    <!--
+                    <div class="card-body">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="toggleLanguage">
+                            <label class="form-check-label text-gray-400" for="toggleLanguage">Extra Contents</label>
+                        </div>
+                    </div>
+                    -->
+                </div>
+            {% endif %}
+
+
+            <div class="card mb-4">
+                <div class="table-responsive">
+                    <table id="packTable"  class="table table-dark table-hover mb-0">
+                    <thead class="">
+                        <tr>
+                        <th class="no-sort" style="width: 64px;"></th>
+                        <th class="">Pack</th>
+                        <th class="text-center">Size</th>
+                        <th class="text-center">Song Count</th>
+                        <th class="text-center">Type(s)</th>
+                        <th class="text-center">Date</th>
+                        <th class="no-sort">Download</th>
+                        <th>Styles</th>
+                        </tr>
+                    </thead>
+            <tbody>
+            {% for pack in packs %}
+		    <tr>
+                <td><img loading="lazy" class="img-fluid rounded" style="max-height:50px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
+                <td class="small"><a class="text-blue text-decoration-none fw-medium" href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></td>
+                <td data-sort="{{ pack.size }}" class="small text-center text-gray-300">{{ pack.size|filesizeformat }}</td>
+                <td class="small text-center text-gray-300">{{ pack.song_count }}</td>
+                <td data-sort="{{ pack.types }}" width="100px" class="small text-center text-gray-300">
+                {% for type in pack.types %}
+                    <img alt="{{ type }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ type }} charts" class="img-fluid d-inline-block" style="max-width: 30px; filter: invert(0);" src="{% static 'images/types/'|add:type|add:'.png' %}">
+                {% endfor %}
+                </td>
+                <td class="small text-center text-gray-300">{% if pack.date_created %}{{ pack.date_created|date:"Y-m-d"}} {% else %}{{ pack.date_scanned|date:"Y-m-d" }}{% endif %}</td>
+                <td class="text-center text-gray-300"><a href="{% url 'download_pack' pack.id %}"><strong class="bi bi-download"></strong></a></td>
+                <td data-sort="{{ pack.style }}"></td>
+            </tr>
+            {% empty %}
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+{% endblock content%}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#packTable').DataTable({
+        dom: '<"dt-controls row px-3 py-2 mb-0"<"col-md-6"l><"col-md-6 text-md-end"f>>t<"dt-footer row mt-3 px-3 pb-3"<"col-md-6"i><"col-md-6 text-md-end"p>>',
+        initComplete: function () {
+            $('.dataTables_length select').addClass('form-select w-auto');
+            $('.dataTables_filter input').addClass('form-control');
+        },
+        paging: true,
+        searching: true,
+        ordering: true,
+        columnDefs: [{
+            orderable: false,
+            targets: "no-sort"
+            },
+            {
+                target: 7,
+                visible: false
+            }],
+        pageLength: 25,
+        lengthMenu: [25, 50, 100, 200], // Options for rows per page
+        language: {
+            search: "🔍 Filter Packs:", // Custom search placeholder
+            lengthMenu: "Show _MENU_ packs per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ packs",
+            infoEmpty: "No packs found",
+            paginate: {
+                previous: "← Previous",
+                next: "Next →"
+            }
+        }
+    });
+
+    var table = $('#packTable').DataTable();
+
+    const hash = window.location.hash.substring(1); // remove #
+    const params = new URLSearchParams(hash);
+
+    if (params.has('sort')) {
+        const [column, direction] = params.get('sort').split('_');
+        table.order([parseInt(column), direction]).draw();
+    }
+
+    if (params.has('page')) {
+        const page = parseInt(params.get('page'), 10) - 1;
+        table.page(page).draw('page');
+    }
+
+    table.on('order.dt page.dt', function () {
+        const info = table.page.info();
+        const order = table.order()[0]; // [column, direction]
+
+        const newHash = `page=${info.page + 1}&sort=${order[0]}_${order[1]}`;
+        history.replaceState(null, null, `#${newHash}`);
+    });
+
+    // Track active filters
+    let activeFilters = [];
+
+    // Custom filter logic for JSON data-sort field
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+        //var jsonTypeData = $(table.row(dataIndex).node()).find('td:eq(7)').data('sort');
+        //var jsonTypeData = table.cell({ row: dataIndex, column: 7 }).data()["@data-sort"];
+        var rowData = table.row(dataIndex).data();
+        var jsonTypeData = rowData[7]["@data-sort"];  // if your data is an array
+        console.log("JSONDATA:", jsonTypeData);
+
+        try {
+            var packTypes = JSON.parse(jsonTypeData.replace(/'/g, '"')); // Convert to valid JSON format
+        } catch (e) {
+            console.error('Invalid JSON data-sort:', jsonTypeData);
+            return false; // Skip if JSON parsing fails
+        }
+
+        // Show all rows if no filters are active
+        if (activeFilters.length === 0) {
+            return true;
+        }
+
+        // Check for any active filter match
+        return activeFilters.some(filter => packTypes.includes(filter));
+    });
+
+    $('.game-mode-btn').on('click', function () {
+        const filterValue = $(this).data('style');
+
+        // Toggle visual class first
+        $(this).toggleClass('active');
+
+        // Rebuild activeFilters from all active buttons
+        activeFilters = $('.game-mode-btn.active').map(function () {
+            return $(this).data('style');
+        }).get();
+
+        // Force DataTable to re-evaluate
+        table.draw();
+    });
+
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl, {
+        delay: { show: 0, hide: 100 }  // No delay on hover, quick hide
+        });
+    })
+});
+
+
+</script>
+
+{% endblock scripts%}

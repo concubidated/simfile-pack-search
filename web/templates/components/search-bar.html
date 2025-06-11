@@ -1,37 +1,22 @@
-<div class="col-12" id="searchBox">
-    <form class="" action="/search" method="POST">
-        {% csrf_token %}
-        <div class="input-group">
-            <select name="type" class="btn btn-primary show-tick selectpicker" title="Type">
-                <option {% if "title" in request.path %}selected{% endif %} value="title">Song Title</option>
-                <option {% if "artist" in request.path %}selected{% endif %} value="artist">Artist</option>
-                <option {% if "pack" in request.path %}selected{% endif %} value="pack">Pack Name</option>
-                <option {% if "credit" in request.path %}selected{% endif %} value="credit">Chart Author</option>
-            </select>
-            <input type="text" id="search" name="search" class="form-control" {% if search_query %} value="{{ search_query }}" {% endif %} placeholder="">
-            <button type="submit" name="submit" class="btn btn-primary">Search</button>
-        </div>
-    </form>
-    </div>
-    <div class="col-md-12">
-        <!-- Button to toggle the collapse -->
-        <button class="btn btn-primary mt-3 mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#filterCheckboxes" aria-expanded="false" aria-controls="filterCheckboxes">
-            Filters
-        </button>
-        <div class="collapse mb-3" id="filterCheckboxes">
-            <div>
-                <label>Filter by Type:</label>
-                <div><label><input type="checkbox" class="filter-checkbox" value="dance"> Dance</label></div>
-                <div><label><input type="checkbox" class="filter-checkbox" value="pump"> Pump</label></div>
-                <div><label><input type="checkbox" class="filter-checkbox" value="smx"> SMX</label></div>
-                <div><label><input type="checkbox" class="filter-checkbox" value="techno"> Techno</label></div>
-            </div>
-            <div>
-                <label>Filter by Style:</label>
-                <div><label><input type="checkbox" class="filter-checkbox" value="single"> Singles</label></div>
-                <div><label><input type="checkbox" class="filter-checkbox" value="double"> Doubles</label></div>
-                <div><label><input type="checkbox" class="filter-checkbox" value="solo"> Solo</label></div>
-            </div>
-        </div>
-    </div> 
-</div>
+                <div class="row g-3 mb-4 align-items-end">
+                    <div class="col-lg-12">
+                        <div class="row g-2">
+                            <div class="col-auto">
+                                <form class="" action="/search" method="POST">
+                                {% csrf_token %}
+                                <select class="form-select" title="Type" name="type">
+                                    <option {% if "title" in request.path %}selected{% endif %} value="title">Song Title</option>
+                                    <option {% if "artist" in request.path %}selected{% endif %} value="artist">Artist</option>
+                                    <option {% if "pack" in request.path %}selected{% endif %} value="pack">Pack Name</option>
+                                    <option {% if "credit" in request.path %}selected{% endif %} value="credit">Chart Author</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <div class="input-group">
+                                    <span class="input-group-text"><span class="">🔍</span></span><input type="text" id="search" name="search" class="form-control" {% if search_query %} value="{{ search_query }}" {% endif %} placeholder="Search packs..." />
+                                    <button type="submit" name="submit" class="btn btn-primary">Search</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>

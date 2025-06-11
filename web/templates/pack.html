@@ -4,58 +4,137 @@
 
 {% block title %}Pack - {{ pack.name }}{% endblock %}
 {% block content %}
-<body class="container my-4">
-    <div class="row mb-4">
-        <div class="col-12 col-md-4 text-center">
-	    <strong>{{ pack.name }}</strong>
-            {% if pack.banner %}
-                <img class="img-fluid rounded" src="/media/images/packs/{{ pack.banner }}" alt="{{ pack.name }}">
-            {% else %}
-                <img class="img-fluid rounded" src="/media/images/packs/nobanner.png" alt="No banner available">
-            {% endif %}
-            <ul class="list-group mt-3">
-                <li class="list-group-item"><strong>Number of Songs:</strong> {{ pack.song_count }}</li>
-                <li class="list-group-item"><strong>Number of Charts:</strong> {{ chart_info.count }}</li>
-                <li class="list-group-item"><strong>Difficulty Range:</strong> {{ chart_info.min_meter }} - {{ chart_info.max_meter }}</li>
-		{% if pack.packType %}<li class="list-group-item"><strong>Pack Type:</strong>{% if pack.packType == "itg" or pack.packType == "ddr "%} Pad ({{pack.packType}}){% else %}{{ pack.packType }}{% endif %}</li>{% endif %}
-		{% if pack.substyle %}<li class="list-group-item"><strong>Substyle:</strong> {{ pack.substyle }}</li> {% endif %}
-		{% if pack.extras %}<li class="list-group-item"><strong>Contains Extras</strong></li>{% endif %}
-		{% if pack.source %}<li class="list-group-item"><strong>Source:</strong> {{ pack.source }}</li>{% endif %}
-                <li class="list-group-item"><a href="{% url 'download_pack' pack.id %}"><strong class="bi bi-download"></strong></a><br><strong><a href="{% url 'download_mirror' pack.id %}">Mirror</a></strong></li>
-
-            </ul>
-        </div>
-        <div class="col-12 col-md-8">
-            <canvas id="difficultyGraph" width="400" height="150"></canvas>
-            <div id="filterCheckboxes">
-                {% if styles|length > 1 %}
-                {% for style in styles %}
-                <input type="checkbox" class="filter-checkbox" value="{{ style }}"> {{ style }}<br>
-                {% endfor %}
-                {% endif %}
+        <div class="container py-4">
+            <a class="btn btn-link text-blue text-decoration-none p-0" href="/packs"><span class="me-2">←</span>Back to packs</a>
+            <div class="row mt-4">
+                <div class="col-lg-8 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0 d-flex align-items-center"><span class="me-2 text-blue">📦</span>{{ pack.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                <div class="mt-2">
+                                    {% if pack.banner %}
+                                    <img class="img-fluid rounded" src="/media/images/packs/{{ pack.banner }}" alt="{{ pack.name }}">
+                                    {% else %}
+                                    <img class="img-fluid rounded" src="/media/images/packs/nobanner.png" alt="No banner available">
+                                    {% endif %}
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'download_pack' pack.id %}" class="btn btn-primary w-100 mt-3"><span class="me-2">⬇️</span>Download Pack</a>
+                                        <a href="{% url 'download_mirror' pack.id %}" class="btn btn-primary w-100 mt-3"><span class="me-2">⬇️</span>Mirror</a>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row mb-3 g-2">
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Songs</small>
+                                                <div class="fs-5 fw-medium text-white">{{ pack.song_count }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Size</small>
+                                                <div class="fs-5 fw-medium text-white">{{ pack.size|filesizeformat }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Charts</small>
+                                                <div class="fs-5 fw-medium text-white">{{ chart_info.count }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Difficulty</small>
+                                                <div class="fs-5 fw-medium text-white">{{ chart_info.min_meter }} - {{ chart_info.max_meter }}</div>
+                                            </div>
+                                        </div>
+                                        {% if pack.packType %}
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Type</small>
+                                                <div class="fs-5 fw-medium text-white">{% if pack.packType == "itg" or pack.packType == "ddr "%}Pad ({{pack.packType|upper}}){% else %}{{ pack.packType }}{% endif %}</div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% if pack.sync != 'n/a' %}
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
+                                                <small class="text-gray-400">Sync</small>
+                                                <div class="fs-5 fw-medium text-white">{{ pack.sync|upper }}</div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div style="height:100%" class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0 d-flex align-items-center"><span class="me-2 text-blue">📊</span>Difficulty Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container" style="max-height: 400px;">
+                                <canvas id="difficultyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <label>
-                {% if translit %}
-                <input type="checkbox" id="toggleLanguage"> Show Translated Data
-                {% endif %}
-            </label>
-        </div>
-    </div>
 
-    <div class="table-responsive">
-        <table id="songTable" class="table table-striped table-hover table-bordered">
-            <thead class="">
-            <tr>
-                <th>Banner</th>
-                <th>Song</th>
-                <th>Subtitle</th>
-                <th>Song Length</th>
-                <th>BPM</th>
-                <th>Credit</th>
-                <th>Chart Types</th>
-                <th>Meter Range</th>
-            </tr>
-            </thead>
+            {% if styles|length > 1 %}
+            <div class="card mb-3">
+                    <div class="card-header"><h5 class="card-title text-white mb-0">Filter By Mode</h5></div>
+                    <div class="card-body">
+                        <div>
+                            <div class="d-flex flex-wrap gap-2" id="styleFilterButtons">
+                                {% for style in styles %}
+                                <button type="button"
+                                        data-style="{{ style }}"
+                                        class="game-mode-btn d-flex align-items-center justify-content-center"
+                                        title="{{ style }}">
+                                    <div class="text-white" style="width: 128px;">
+                                       <img src="/static/images/styles/{{ style }}.png" alt="Dance Single" class="w-100 h-100">
+                                    </div>
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>  
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if translit %}
+            <div class="col-12 col-md-8 mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="toggleLanguage">
+                    <label class="form-check-label text-gray-400" for="toggleLanguage">Show Translated Data</label>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card mb-4">
+                <div class="table-responsive">
+                <table id="songTable"  class="table table-dark table-hover mb-0">
+                <thead class="">
+                <tr>
+                    <th class="no-sort" style="width: 64px;"></th>
+                    <th class="text-center">Song</th>
+                    <th class="text-center">Subtitle</th>
+                    <th class="text-center">Song Length</th>
+                    <th class="text-center">BPM</th>
+                    <th class="text-center">Credit</th>
+                    <th class="text-center">Chart Types</th>
+                    <th class="text-center">Meter Range</th>
+                </tr>
+                </thead>
             <tbody>
             {% load filters %}
             {% for song in songs %}
@@ -65,17 +144,17 @@
                 {% else %}<img loading="lazy" class="img-fluid rounded" style="max-height:100px;" src="/media/images/packs/nobanner.png"></td>
                 {% endif %}
                 </td>
-                <td class="small text-center"><span class="translatable"><a data-translated="{{ song.titletranslit|slice:':64' }}" href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></span><br><span class="small translatable" data-translated="{{ song.artisttranslit|slice:':64' }}">{{ song.artist|slice:":64" }}</span></td>
-                <td data-translated="{{ song.subtitletranslit|slice:':64' }}" class="translatable small text-center">{{ song.subtitle|slice:":64" }}</td>
-                <td class="small text-center">{{ song.song_length_formatted }}</td>
-                <td class="small text-center">{{ song.bpms }}</td>
-                <td class="small text-center">{% for credit in song.credit %}{{ credit }}<br>{% endfor %}</td>
+                <td class="small text-center"><span class="translatable"><a class="text-blue text-decoration-none fw-medium" data-translated="{{ song.titletranslit|slice:':64' }}" href="/song/{{ song.id }}">{{ song.title|slice:":64" }}{% if song.title|length > 64 %}...{% endif %}</a></span><br><span class="small translatable text-gray-400" data-translated="{{ song.artisttranslit|slice:':64' }}">{{ song.artist|slice:":64" }}</span></td>
+                <td data-translated="{{ song.subtitletranslit|slice:':64' }}" class="translatable small text-center small text-gray-400">{{ song.subtitle|slice:":64" }}</td>
+                <td class="small text-center text-gray-400">{{ song.song_length_formatted }}</td>
+                <td class="small text-center text-gray-400">{{ song.bpms }}</td>
+                <td class="small text-center text-gray-400" style="white-space: pre-line;">{% for credit in song.credit %}{{ credit }}<br>{% endfor %}</td>
                 <td data-sort="{{ song.charts.all|charttypes }}" class="text-center">{% if song.charts.all %}
                     {% for chart in song.charts.all|charttypes %}
                     <img data-bs-toggle="tooltip" data-bs-placement="top" title="{{ chart }}" class="img-fluid d-inline-block me-2" style="max-width: 50px; filter: invert(0);" src="{% static 'images/styles/'|add:chart|add:'.png' %}" alt="{{ chart }}">
                 {% endfor %}{% endif %}
                 </td>
-                <td class="small text-center">
+                <td class="small text-center text-gray-400">
                 {% if song.charts.all %}
                     {% if song.min_meter != song.max_meter %}
                         {{ song.min_meter }}-{{ song.max_meter }}
@@ -92,58 +171,80 @@
             </tbody>
         </table>
     </div>
+</div>
 </body>
 {% endblock content %}
 {% block scripts %}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-var ctx = document.getElementById('difficultyGraph').getContext('2d');
-var difficultyGraph = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: [{% for key, value in meter_dist.items %}{{ key }}, {% endfor %}]
-        ,
-        datasets: [{
-            label: 'Difficulty Distribution',
-            data: [{% for key, value in meter_dist.items %}{{ value }}, {% endfor %}],
-            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-        }]
+const ctx = document.getElementById('difficultyChart').getContext('2d');
+Chart.defaults.font.style = 'normal';
+
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: [{% for key, value in meter_dist.items %}{{ key }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+        label: 'Difficulty',
+        data: [{% for key, value in meter_dist.items %}{{ value }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+        backgroundColor: '#3B82F6',
+        borderRadius: {
+            topLeft: 6,
+            topRight: 6,
+            bottomLeft: 0,
+            bottomRight: 0
+        },
+        borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: false
+        },
+        title: {
+            display: false,
+        },
     },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true,
-                title: {
-                    display: true,
-                    text: 'Chart Count',
-                    color: '#e0e0e0'
-                },
-                ticks: {
-                    color: '#e0e0e0'
-                },
+    scales: {
+      x: {
+        title: {
+            display: true,
+            text: 'Difficulty Level',
+            color: '#9ca3af',
+            font: {
+                size: 14,
+                weight: 'normal',
             },
-            x: {
-                title: {
-                    display: true,
-                    text: 'Meter',
-                    color: '#e0e0e0'
-                },
-                ticks: {
-                    color: '#e0e0e0'
-                }
+            padding: {
+                top: 10
             }
         },
-        plugins: {
-            legend: {
-                labels: {
-                    color: '#e0e0e0'
-                }
+        ticks: {
+            color: '#9ca3af',
+            font: {
+                size: 12,
+                style: 'normal'
             }
+        },
+        grid: {
+          display: false
         }
+      },
+      y: {
+        ticks: {
+          color: '#9ca3af',
+          stepSize: 1
+        },
+        grid: {
+          display: false
+        }
+      }
     }
+  }
 });
 
 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
@@ -155,6 +256,11 @@ tooltipTriggerList.forEach(function (tooltipTriggerEl) {
 
 $(document).ready(function () {
     $('#songTable').DataTable({
+        dom: '<"dt-controls row px-3 py-2 mb-0"<"col-md-6"l><"col-md-6 text-md-end"f>>t<"dt-footer row mt-3 px-3 pb-3"<"col-md-6"i><"col-md-6 text-md-end"p>>',
+        initComplete: function () {
+            $('.dataTables_length select').addClass('form-select w-auto');
+            $('.dataTables_filter input').addClass('form-control');
+        },
         paging: true,         // Enable pagination
         searching: true,      // Enable search
         ordering: true,       // Enable sorting
@@ -165,7 +271,7 @@ $(document).ready(function () {
         pageLength: 25,       // Default rows per page
         lengthMenu: [25, 50, 100, 200], // Options for rows per page
         language: {
-            search: "🔍 Search Songs:", // Custom search placeholder
+            search: "🔍 Filter Songs:", // Custom search placeholder
             lengthMenu: "Show _MENU_ songs per page",
             info: "Showing _START_ to _END_ of _TOTAL_ songs",
             infoEmpty: "No songs found",
@@ -220,17 +326,19 @@ $(document).ready(function () {
         return activeFilters.some(filter => packTypes.includes(filter));
     });
 
-    // Checkbox change logic
-    $('#filterCheckboxes .filter-checkbox').on('change', function () {
-        const filterValue = $(this).val();
+    $('.game-mode-btn').on('click', function () {
+        const filterValue = $(this).data('style');
 
-        if (this.checked) {
-            activeFilters.push(filterValue);
-        } else {
-            activeFilters = activeFilters.filter(f => f !== filterValue); // Remove if unchecked
-        }
+        // Toggle visual class first
+        $(this).toggleClass('active');
 
-        table.draw(); // Redraw the table with updated filters
+        // Rebuild activeFilters from all active buttons
+        activeFilters = $('.game-mode-btn.active').map(function () {
+            return $(this).data('style');
+        }).get();
+
+        // Force DataTable to re-evaluate
+        table.draw();
     });
 
     // Store original text in "data-original" attribute for each translatable cell

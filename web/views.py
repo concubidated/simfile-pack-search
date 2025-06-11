@@ -111,7 +111,7 @@ def search(request, search_type=None, search_query=None):
         packs = list(Pack.objects.filter(name__icontains=search_query)
                      .annotate(song_count=Count('songs')).order_by("name"))
         packs.sort(key=lambda pack: natural_sort_key(pack.name))
-        return render(request, "main.html", {"packs": packs, "search_query": search_query})
+        return render(request, "pack_list.html", {"packs": packs, "search_query": search_query})
     else:
         redirect("/")
 
@@ -174,13 +174,15 @@ def pack_view(request, packid):
         for song in songs
     )
 
+    styles = sorted_styles(packid)
+    
     context = {
         "pack": parent_pack,
         "songs": songs,
         "charts": charts,
         "meter_dist": meter_dist,
         "chart_info": chart_info,
-        "styles": get_all_styles(packid),
+        "styles": styles,
         "translit": translit
     }
 
@@ -193,7 +195,7 @@ def song_list(request, packid):
 
 def chart_list(request, songid):
     """list all the charts for a song"""
-    charts = Chart.objects.filter(song=songid).select_related('chartdata').order_by("meter")
+    charts = Chart.objects.filter(song=songid).order_by("meter")
     song = Song.objects.get(id=songid)
     pack = Pack.objects.get(id=song.pack.id)
 
@@ -220,36 +222,6 @@ def chart_list(request, songid):
             style_types[chart.charttype] = {}
         style_types[chart.charttype][chart.id] = chart
 
-        # lets check to see if this chart is in other packs
-        common_packs = Pack.objects.filter(songs__charts__chartkey=chart.chartkey).distinct()
-        chart.common_packs = common_packs
-
-        # calculate average notes per second
-        if chart.npsgraph:
-            nps_data = json.loads(chart.npsgraph)
-            if len(nps_data) > 0:
-                chart.npsavg = sum(nps_data) / len(nps_data)
-
-        # Organize chartData for chartviewer.js
-        if hasattr(chart, 'chartdata'):
-            # Strip the measure comments some charts have
-            chart.chartdata.data = re.sub(r'//.*$', '', chart.chartdata.data, flags=re.MULTILINE)
-
-            blocks = [block.strip() for block in
-                      chart.chartdata.data.strip().split(",") if block.strip()]
-            notes = []
-            for i, block in enumerate(blocks):
-                lines = block.splitlines()
-                note_block = []
-                for line in lines:
-                    # Turn "1001" into ["1", "0", "0", "1"]
-                    note_block.append(list(line.strip()))
-                notes.append([i, note_block])
-            column_count = len(notes[0][1][0])
-            chart.chartdata.data = notes
-
-            # Notefield width for each chart
-            chart.notefield_width = 32 * column_count
 
     # lets presort the dict and give priority to common game types.
     # Define custom priority
@@ -280,9 +252,13 @@ def chart_list(request, songid):
 
     charts = sorted(charts, key=chart_sort_key)
 
+    min_chart_meter = min(charts, key=lambda c: c.meter).meter if charts else 0
+    max_chart_meter = max(charts, key=lambda c: c.meter).meter if charts else 0
+
     context = {
         "song": song,
-        "charts": charts,
+        "min_chart_meter": min_chart_meter,
+        "max_chart_meter": max_chart_meter,
         "pack": pack,
         "chart_types": chart_types,
         "style_types": style_types,
@@ -291,13 +267,40 @@ def chart_list(request, songid):
 
     return render(request, "song.html", context)
 
-def main(request):
-    """main pack list"""
+def pack_list(request):
+    """pack list"""
     packs = list(Pack.objects.annotate(song_count=Count('songs')).order_by("name"))
     packs.sort(key=lambda pack: natural_sort_key(pack.name))
 
+    styles = {
+        "dance-single": "Dance Single",
+        "dance-double": "Dance Double",
+        "dance-solo": "Dance Solo",
+        "pump-single": "Pump Single",
+        "pump-double": "Pump Double",
+        "smx-single": "SMX Single",
+        "smx-double10": "SMX Double 10",
+        "techno-single9": "Techno Single 9",
+    }
+
     context = {
-        "packs": packs
+        "packs": packs,
+        "styles": styles
+    }
+
+    return render(request, "pack_list.html", context)
+
+def main(request):
+    """main home"""
+    packs = list(
+        Pack.objects
+        .annotate(song_count=Count('songs'))
+        .order_by("-date_scanned")[:20]  # descending (most downloaded first)
+    )
+
+    context = {
+        "packs": packs,
+        "disable_filter": True,  # Disable filter for main page
     }
 
     return render(request, "main.html", context)
@@ -305,21 +308,20 @@ def main(request):
 def faq_view(request):
     """faq view"""
     return render(request, "faq.html", {})
+
 #@cache_page(timeout=None)  # Cache the view for 1 day
 def list_all_songs(request):
-    """list all songs will query all songs and charts"""
+    """List all songs and charts efficiently, with cache."""
     cache_key = "all_songs"
-
     songs = cache.get(cache_key)
 
     if not songs:
-        # Only fetch needed fields for charts
         charts_qs = Chart.objects.only("meter", "difficulty", "charttype", "song_id")
 
-        # Main query
-        songs = (
+        # Evaluate the QuerySet to list so we store actual results, not lazy queryset
+        songs = list(
             Song.objects
-            .select_related("pack")  # Pull pack in same query
+            .select_related("pack")
             .prefetch_related(
                 Prefetch("charts", queryset=charts_qs)
             )
@@ -327,18 +329,16 @@ def list_all_songs(request):
                 min_meter=Min("charts__meter"),
                 max_meter=Max("charts__meter")
             )
-            .only("id", "title", "subtitle", "artist", "credit",
-                  "banner", "pack__name", "pack__id", "pack__banner")
+            .only(
+                "id", "title", "subtitle", "artist", "credit",
+                "banner", "pack__id", "pack__name", "pack__banner"
+            )
             .order_by("title")
         )
 
-        cache.set(cache_key, songs, timeout=60 * 60 * 24)
+        cache.set(cache_key, songs, timeout=60 * 60 * 24)  # 24 hrs
 
-    context = {
-        "songs": songs,
-    }
-
-    return render(request, "song_list.html", context)
+    return render(request, "song_list.html", {"songs": songs})
 
 def get_all_types():
     """get all the types of from Packs"""
@@ -357,3 +357,21 @@ def get_all_styles(packid):
         for s in style:
             out.add(s)
     return out
+
+def sorted_styles(packid):
+    # lets presort the dict and give priority to common game types.
+    # Define custom priority
+    priority_order = ["dance-single", "dance-double", "dance-solo", "dance-couple",
+                      "dance-threepanel",
+                      "pump-single", "pump-double", "pump-halfdouble",
+                      "smx-single", "smx-double6", "smx-double10",
+                      "techno-single9", "techno-double9"]
+
+    styles = get_all_styles(packid)
+    def sort_key(item):
+        try:
+            return priority_order.index(item)
+        except ValueError:
+            return len(priority_order) + 1  # put unknown types at the end
+
+    return sorted(styles, key=sort_key)

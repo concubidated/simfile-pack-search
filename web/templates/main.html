@@ -1,47 +1,64 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load filters %}
 
 {% block title %}Stepmania Online Search{% endblock %}
 {% block content %}
-<body class="container mt-4">
-    <div class="table-responsive">
-    
-    {% include 'components/search-bar.html' %}
+<main class="container py-4">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Recent Packs</h1>
+    </div>
+    <p class="text-gray-400">Browse and download the latest song packs for your rhythm game</p>
 
-    <table id="packTable" class="table table-striped table-hover table-bordered">
+    {% include 'components/search-bar.html' %}
+<style>
+table.dataTable {
+    margin-top: 0px !important;
+}
+</style>
+    <div class="card mb-4">
+        <div class="table-responsive">
+        <table id="packTable"  class="table table-dark table-hover mb-0">
         <thead class="">
         <tr>
-            <th class="no-sort"></th>
+            <th class="no-sort" style="width: 64px;"></th>
             <th>Pack</th>
-            <th>Size</th>
-            <th>Song Count</th>
-            <th>Types(s)</th>
-            <th>Date</th>
-            <th class="no-sort">Download</th>
-            <th>Styles</th>
+            <th class="text-end">Type(s)</th>
+            <th class="text-center">Song Count</th>
+            <th class="text-center">Size</th>
+            <th class="text-center">Date</th>
+            <th class="text-end no-sort" style="width: 96px;">Download</th>
         </tr>
         </thead>
         <tbody>
         {% for pack in packs %}
 		<tr>
 			<td><img loading="lazy" class="img-fluid rounded" style="max-height:50px;" src="/media/images/packs/{% if pack.banner %}{{ pack.banner }}{% else %}nobanner.png{% endif %}"></td>
-            <td class="small"><a href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></td>
-            <td data-sort="{{ pack.size }}" class="small">{{ pack.size|filesizeformat }}</td>
-            <td class="small">{{ pack.song_count }}</td>
-            <td data-sort="{{ pack.types }}" width="100px" class="small">
+            <td class="small">
+                <div class="d-flex align-items-center gap-2">
+                    {% if pack.date_scanned|is_new %}
+                    <span class="badge bg-success">NEW</span>
+                    {% endif %}
+                    <a class="text-blue text-decoration-none fw-medium" href="/pack/{{ pack.id }}">{{ pack.name|slice:":64" }}{% if pack.name|length > 64 %}...{% endif %}</a></div>
+            </td>
+            <td data-sort="{{ pack.types }}" width="100px" class="text-center small">
 			{% for type in pack.types %}
 			    <img alt="{{ type }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ type }} charts" class="img-fluid d-inline-block" style="max-width: 30px; filter: invert(0);" src="{% static 'images/types/'|add:type|add:'.png' %}">
 			{% endfor %}
             </td>
-	    <td class="small">{% if pack.date_created %}{{ pack.date_created|date:"Y-m-d"}} {% else %}{{ pack.date_scanned|date:"Y-m-d" }}{% endif %}</td>
+            <td class="small text-center text-gray-300">{{ pack.song_count }}</td>
+            <td data-sort="{{ pack.size }}" class="text-center text-gray-300 small">{{ pack.size|filesizeformat }}</td>
+	        <td class="text-center text-gray-300 small">{% if pack.date_created %}{{ pack.date_created|date:"Y-m-d"}} {% else %}{{ pack.date_scanned|date:"Y-m-d" }}{% endif %}</td>
             <td class="text-center"><a href="{% url 'download_pack' pack.id %}"><strong class="bi bi-download"></strong></a></td>
-            <td data-sort="{{ pack.style }}"></td>
         </tr>
 	    {% empty %}
 	    {% endfor %}
         </tbody>
-    </table>
+        </table>
+    </div>
+    </div>
+    
 
 </body>
 {% endblock content%}
@@ -50,9 +67,10 @@
 <script>
 $(document).ready(function() {
     $('#packTable').DataTable({
-        paging: true,
-        searching: true,
+        paging: false,
+        searching: false,
         ordering: true,
+        info: false
         columnDefs: [{
             orderable: false,
             targets: "no-sort"

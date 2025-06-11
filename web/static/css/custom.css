@@ -1,0 +1,288 @@
+.chart-container {
+  width: 100%;
+  position: relative;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+canvas {
+  display: block;
+  width: 100% !important;
+}
+
+/* Match dark theme */
+.dt-controls {
+  background-color: #1e293b;
+  border-radius: 0.5rem 0.5rem 0 0;
+  border: 1px solid #334155;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Styling the select */
+.dataTables_length select.form-select {
+  background-color: #1f2937;
+  color: #d1d5db;
+  border: 1px solid #374151;
+  padding: 0.25rem 0.75rem;
+  width: auto;
+  display: inline-block;
+}
+
+.dataTables_length select.form-select {
+  min-width: 90px;
+}
+
+/* Styling the search input */
+.dataTables_filter input.form-control {
+  background-color: #1f2937;
+  color: #d1d5db;
+  border: 1px solid #374151;
+  padding: 0.25rem 0.75rem;
+  width: 250px; /* Adjust as needed */
+  display: inline-block;
+}
+
+/* Labels */
+.dataTables_length label,
+.dataTables_filter label {
+  color: #9ca3af;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+table.dataTable thead {
+  border-top: 1px solid #334155;
+}
+
+table.dataTable {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+th.no-sort.sorting::after,
+th.no-sort.sorting_asc::after,
+th.no-sort.sorting_desc::after {
+  display: none !important;
+}
+
+th.sorting_disabled::after {
+  display: none !important;
+}
+
+.dt-footer-new {
+  background-color: #1e293b;
+  border-radius: 0 0 0.5rem 0.5rem;
+  border: 1px solid #334155;
+  border-top: none;
+  margin-top: 0;
+  display: flex;
+  align-items: center; /* 🧭 vertical alignment */
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* Info text */
+.dataTables_info {
+  color: #9ca3af;
+  padding-top: 0.5rem;
+}
+
+/* Base button style */
+.dataTables_paginate .paginate_button {
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Hover state */
+.dataTables_paginate .paginate_button:hover {
+  background-color: #374151;
+  color: #ffffff !important;
+}
+
+/* Active page button */
+.dataTables_paginate .paginate_button.current {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Disabled button (e.g., "Previous" on first page) */
+.dataTables_paginate .paginate_button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.accordion-item {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem; /* adds visual spacing */
+  overflow: hidden;
+}
+
+.accordion-button {
+  background-color: #273549;
+  color: #e5e7eb;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.accordion-button.collapsed {
+  background-color: #1e293b;
+  color: #d1d5db;
+}
+
+.accordion-button:not(.collapsed) {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.accordion-body {
+  background-color: #0f172a;
+  color: #e5e7eb;
+  padding: 1rem 1.25rem;
+}
+
+.nav-link {
+  font-weight: 500;
+  color: #3b82f6; /* Tailwind blue-500 */
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+  padding-bottom: 0.25rem;
+  margin-left: 10px;
+}
+
+.nav-link:hover {
+  color: #60a5fa; /* Tailwind blue-400 */
+}
+
+.nav-link.active {
+  color: #ffffff;
+  border-bottom: 2px solid #3b82f6;
+}
+
+/* Simulate the :hover state permanently */
+.btn-outline-info {
+  background-color: #0dcaf0;
+  color: #0dcaf0;
+  border-color: #0dcaf0;
+}
+.btn-outline-success {
+  background-color: #198754;
+  color: #198754;
+  border-color: #198754;
+}
+.btn-outline-warning {
+  background-color: #ffc107;
+  color: #ffc107;
+  border-color: #ffc107;
+}
+.btn-outline-danger {
+  background-color: #dc3545;
+  color: #dc3545;
+  border-color: #dc3545;
+}
+.btn-outline-primary {
+  background-color: #0d6efd;
+  color: #0d6efd;
+  border-color: #0d6efd;
+}
+.btn-outline-secondary {
+  background-color: #6c757d;
+  color: #6c757d;
+  border-color: #6c757d;
+}
+
+.btn-check:not(:checked) + .btn-outline-success,
+.btn-check:not(:checked) + .btn-outline-warning,
+.btn-check:not(:checked) + .btn-outline-info,
+.btn-check:not(:checked) + .btn-outline-danger,
+.btn-check:not(:checked) + .btn-outline-primary,
+.btn-check:not(:checked) + .btn-outline-secondary {
+  background-color: rgba(255, 255, 255, 0.1);
+  background-color: transparent
+}
+
+/* Remove padding and background from nav button */
+.nav-link {
+  background-color: transparent;
+  padding: 0;
+  border: none;
+}
+
+/* Custom image tab border + background logic */
+.style-icon {
+  border: 2px solid #3b3f50;
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  background-color: #1e2536;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.nav-link.active .style-icon,
+.style-icon.active {
+  border-color: #3b82f6;
+  background-color: #1e40af;
+}
+
+
+/* Default: light border, subtle bg */
+.style-icon {
+  border: 2px solid #3b3f50;
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  background-color: #0f172a; /* dark base */
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  opacity: 0.8;
+}
+
+/* Active tab: strong contrast */
+.nav-link.active .style-icon,
+.style-icon.active {
+  border-color: #3b82f6; /* blue-500 */
+  background-color: #1e40af;
+  opacity: 1;
+}
+
+.style-icon {
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
+}
+
+
+.render {
+        height: 500px;
+        position: relative;
+        border: 1px solid #ccc;
+        overflow: hidden;
+}
+  .scrollbar-notes {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow-y: scroll;
+        z-index: 1;
+  }
+  .fake-scroll {
+        width: 1px;
+        height: 500px; /* Large enough for all virtual rows */
+  }
+  .canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 2;
+        pointer-events: none; /* Let scroll events pass through */
+  }
