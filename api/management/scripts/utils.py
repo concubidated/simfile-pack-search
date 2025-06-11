@@ -202,7 +202,7 @@ def discord_webhook(pack):
     pack_id = pack["id"]
     size = pack["size"]
     song_count = pack["song_count"]
-    download_url = f"https://{os.environ.get('DOMAIN')}/download/pack/{pack_id}"
+    download_url = f"https://{os.environ.get('DOMAIN')}/pack/{pack_id}"
 
     embed = {
         "title": "New Pack Added",
@@ -217,7 +217,7 @@ def discord_webhook(pack):
                 "value": chart_type_list or "No charts found",
             },
             {
-                "name": "📥 Download",
+                "name": "Download",
                 "value": f"[Click here to download]({download_url})"
             },
         ],
@@ -230,7 +230,7 @@ def discord_webhook(pack):
 
     payload = {
         "username": "SMO Pack Scanner",
-        "avatar_url": "http://new.stepmaniaonline.net:8000/static/images/logo.png",
+        "avatar_url": f"http://{os.environ.get('DOMAIN')}/static/images/logo.png",
         "embeds": [embed]
     }
 
