@@ -175,7 +175,7 @@ def pack_view(request, packid):
     )
 
     styles = sorted_styles(packid)
-    
+
     context = {
         "pack": parent_pack,
         "songs": songs,
@@ -359,6 +359,7 @@ def get_all_styles(packid):
     return out
 
 def sorted_styles(packid):
+    """sort styles by priority"""
     # lets presort the dict and give priority to common game types.
     # Define custom priority
     priority_order = ["dance-single", "dance-double", "dance-solo", "dance-couple",

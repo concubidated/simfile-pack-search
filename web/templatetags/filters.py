@@ -1,6 +1,6 @@
 """web filters template tags"""
-from django import template
 from datetime import timedelta
+from django import template
 from django.utils import timezone
 
 register = template.Library()
@@ -15,4 +15,5 @@ def charttypes(value):
 
 @register.filter
 def is_new(date_scanned, days=30):
+    """is this pack new?"""
     return date_scanned > timezone.now() - timedelta(days=days)

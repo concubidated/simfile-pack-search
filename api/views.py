@@ -26,6 +26,7 @@ def pack_list(request):
     return HttpResponse(f"<pre>{out}</pre>")
 
 def chart_json(request, chart_id):
+    """Chart data used to populate song page"""
     chart = Chart.objects.filter(id=chart_id).select_related('chartdata').first()
 
     nps_data = json.loads(chart.npsgraph)
