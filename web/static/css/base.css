@@ -1156,11 +1156,6 @@ body {
   filter: grayscale(100%);
 }
 
-.chart-container {
-    height: 200px;
-    position: relative
-}
-
 .chart-y-axis {
     position: absolute;
     left: 0;
