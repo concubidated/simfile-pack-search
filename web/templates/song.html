@@ -62,7 +62,12 @@
                                         <div class="col-6">
                                             <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
                                                 <small class="text-gray-400">Difficulty</small>
-                                                <div class="fs-5 fw-medium text-white">{{ min_chart_meter }} - {{ max_chart_meter }}</div>
+                                                <div class="fs-5 fw-medium text-white">
+                                                    {% if min_chart_meter != max_chart_meter %}
+                                                        {{ min_chart_meter }} - {{ max_chart_meter }}
+                                                    {% else %}
+                                                        {{ min_chart_meter }}
+                                                    {% endif %}
                                             </div>
                                         </div>
                                     </div>
