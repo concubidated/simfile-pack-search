@@ -17,13 +17,14 @@
                     <div class="card-body">
                         <div>
                             <div class="d-flex flex-wrap gap-2" id="styleFilterButtons">
-                                {% for style in styles %}
-                                <button type="button"
+                                {% for key, value in styles.items %}
+                                <button data-bs-toggle="tooltip" data-bs-placement="top" title="{{ value }}"
+                                        type="button"
                                         data-style="{{ style }}"
                                         class="game-mode-btn d-flex align-items-center justify-content-center"
                                         title="{{ style }}">
                                     <div class="text-white" style="width: 128px;">
-                                       <img src="/static/images/styles/{{ style }}.png" alt="Dance Single" class="w-100 h-100">
+                                       <img src="/static/images/styles/{{ key }}.png" alt="{{ value }}" class="w-100 h-100">
                                     </div>
                                 </button>
                                 {% endfor %}
