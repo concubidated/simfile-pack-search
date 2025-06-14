@@ -281,6 +281,7 @@ def pack_list(request):
         "pump-double": "Pump Double",
         "smx-single": "SMX Single",
         "smx-double10": "SMX Double 10",
+        "techno-single8": "Techno Single 8",
         "techno-single9": "Techno Single 9",
     }
 
