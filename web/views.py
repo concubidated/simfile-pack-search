@@ -149,6 +149,9 @@ def pack_view(request, packid):
         .first()
     )
 
+    if not parent_pack:
+        return redirect("/")
+
     charts = (
         Chart.objects
         .filter(song__pack_id=packid)
@@ -196,6 +199,9 @@ def song_list(request, packid):
 def chart_list(request, songid):
     """list all the charts for a song"""
     charts = Chart.objects.filter(song=songid).order_by("meter")
+    if not charts:
+        return redirect("/")
+
     song = Song.objects.get(id=songid)
     pack = Pack.objects.get(id=song.pack.id)
 
