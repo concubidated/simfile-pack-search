@@ -73,12 +73,12 @@
                   <div class="accordion-body">
                     <p><b>TLDR</b> ITG cabs global offset was not set correctly, to compensate people needed to adjust the offset for custom charts.</p>
                     <p>For a more detailed explaination read here 
-                      <a href="https://itgwiki.dominick.cc/en/packs-and-simfiles/the-9ms-bias" target="_blank">ITG Wiki - The 9ms Bias</a></p>
+                      <a href="https://wiki.clubfantastic.dance/Sync#itg-offset-and-the-9ms-bias" target="_blank">Club Fantastic Wiki - The 9ms Bias</a></p>
                     <p>We have started checking packs with this adjustment (+9ms offset) and removing it, but this is still an ongoing process.
                         This is why sync bias is being shown for pad packs.</p>
                         <p>+9ms packs are a relic from the past and it no longer make any sense to keep them around.</p>
                         <p>Telperion wrote a neat tool <a href="https://github.com/telperion/nine-or-null" target="_blank">Nine-Or-Null</a> to help find and fix these packs.</p>
-                    <p>The plan is to eventually fix all the old incorrect ITG packs, but will take some time to complete. These packs will show as NULL</p>
+                    <p>The plan is to eventually fix all the old ITG packs, but will take some time to complete. These packs will show as NULL</p>
                     <p>As we fix the packs we only adjust the OFFSET field, and do not touch any other metadata
                         <i>.oldsync</i> files are kept as a form of preservation of the original files. You can restore the originals with a script.</p>
                   </div>
