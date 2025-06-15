@@ -58,7 +58,7 @@
                                         <div class="col-6">
                                             <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
                                                 <small class="text-gray-400">Type</small>
-                                                <div class="fs-5 fw-medium text-white">{% if pack.packType == "itg" or pack.packType == "ddr "%}Pad ({{pack.packType|upper}}){% else %}{{ pack.packType }}{% endif %}</div>
+                                                <div class="fs-5 fw-medium text-capitalize text-white">{% if pack.packType == "itg" or pack.packType == "ddr "%}Pad ({{pack.packType|upper}}){% else %}{{ pack.packType }}{% endif %}</div>
                                             </div>
                                         </div>
                                         {% endif %}
@@ -66,7 +66,7 @@
                                         <div class="col-6">
                                             <div class="p-2 rounded" style="background-color: rgba(55, 65, 81, 0.5);">
                                                 <small class="text-gray-400">Sync</small>
-                                                <div class="fs-5 fw-medium text-white">{{ pack.sync|upper }}</div>
+                                                <div class="fs-5 fw-medium text-capitalize text-white">{{ pack.sync|upper }}</div>
                                             </div>
                                         </div>
                                         {% endif %}
