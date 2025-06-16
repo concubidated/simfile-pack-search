@@ -97,7 +97,7 @@ def sha1sum(file):
 def find_image(path):
     """Scan a folder and returns the first found image"""
     bn_types = {".png", ".jpeg", ".jpg", ".gif", ".bmp", ".avi", ".mp4"}
-    ignore_pattern = re.compile(r"\b(cdtitle|bg|background)\b", re.IGNORECASE)
+    ignore_pattern = re.compile(r"\b(cd|cdtitle|bg|background)\b", re.IGNORECASE)
     prefer_pattern = re.compile(r"\b(bn|banner)\b", re.IGNORECASE)
 
     best_match = None
