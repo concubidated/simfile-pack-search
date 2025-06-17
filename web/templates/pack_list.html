@@ -20,9 +20,8 @@
                                 {% for key, value in styles.items %}
                                 <button data-bs-toggle="tooltip" data-bs-placement="top" title="{{ value }}"
                                         type="button"
-                                        data-style="{{ style }}"
-                                        class="game-mode-btn d-flex align-items-center justify-content-center"
-                                        title="{{ style }}">
+                                        data-style="{{ key }}"
+                                        class="game-mode-btn d-flex align-items-center justify-content-center">
                                     <div class="text-white" style="width: 128px;">
                                        <img src="/static/images/styles/{{ key }}.png" alt="{{ value }}" class="w-100 h-100">
                                     </div>
