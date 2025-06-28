@@ -6,6 +6,9 @@
 {% block content %}
         <div class="container py-4">
             <a class="btn btn-link text-blue text-decoration-none p-0" href="/packs"><span class="me-2">←</span>Back to packs</a>
+
+                {% include 'components/search-bar.html' %}
+
             <div class="row mt-4">
                 <div class="col-lg-8 mb-3">
                     <div class="card">
@@ -149,7 +152,7 @@
                 <td data-translated="{{ song.subtitletranslit|slice:':64' }}" class="translatable small text-center small text-gray-400">{{ song.subtitle|slice:":64" }}</td>
                 <td class="small text-center text-gray-400">{{ song.song_length_formatted }}</td>
                 <td class="small text-center text-gray-400">{{ song.bpms }}</td>
-                <td class="small text-center text-gray-400" style="white-space: pre-line;">{% if song.credit|length < 4 %}{% for credit in song.credit %}{{ credit }}<br>{% endfor %}{% else %}Various{% endif %}</td>
+                <td class="small text-center text-gray-400" style="white-space: pre-line;">{% if song.credit|length < 4 %}{% for credit in song.credit %}{% if "Copied from" not in credit %}{{ credit }}{% endif %}<br>{% endfor %}{% else %}Various{% endif %}</td>
                 <td data-sort="{{ song.charts.all|charttypes }}" class="text-center">{% if song.charts.all %}
                     {% for chart in song.charts.all|charttypes %}
                     <img data-bs-toggle="tooltip" data-bs-placement="top" title="{{ chart }}" class="img-fluid d-inline-block me-2" style="max-width: 50px; filter: invert(0);" src="{% static 'images/styles/'|add:chart|add:'.png' %}" alt="{{ chart }}">
