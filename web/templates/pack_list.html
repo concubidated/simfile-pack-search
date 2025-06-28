@@ -174,12 +174,9 @@ $(document).ready(function() {
 
     // Custom filter logic for JSON data-sort field
     $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-        //var jsonTypeData = $(table.row(dataIndex).node()).find('td:eq(7)').data('sort');
-        //var jsonTypeData = table.cell({ row: dataIndex, column: 7 }).data()["@data-sort"];
         var rowData = table.row(dataIndex).data();
         var jsonTypeData = rowData[7]["@data-sort"];  // if your data is an array
-        console.log("JSONDATA:", jsonTypeData);
-
+        //console.log("JSONDATA:", jsonTypeData);
         let packTypes = [];
         try {
             const parsed = JSON.parse(jsonTypeData.replace(/'/g, '"'));
