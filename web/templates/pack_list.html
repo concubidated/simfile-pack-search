@@ -180,8 +180,12 @@ $(document).ready(function() {
         var jsonTypeData = rowData[7]["@data-sort"];  // if your data is an array
         console.log("JSONDATA:", jsonTypeData);
 
+        let packTypes = [];
         try {
-            var packTypes = JSON.parse(jsonTypeData.replace(/'/g, '"')); // Convert to valid JSON format
+            const parsed = JSON.parse(jsonTypeData.replace(/'/g, '"'));
+            if (Array.isArray(parsed)) {
+                packTypes = parsed;
+            }
         } catch (e) {
             console.error('Invalid JSON data-sort:', jsonTypeData);
             return false; // Skip if JSON parsing fails
