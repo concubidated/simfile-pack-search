@@ -50,6 +50,9 @@ def chart_json(request, chart_id):
         column_count = len(notes[0][1][0])
         chart.chartdata.data = notes
 
+        if "Copied from" in chart.author:
+            chart.author = None
+
         # Notefield width for each chart
         chart.notefield_width = 32 * column_count
 
