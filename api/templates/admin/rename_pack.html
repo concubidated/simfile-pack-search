@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <h2>{{ title }}</h2>
+  <p>Selected packs:</p>
+  <ul>
+    {% for pack in packs %}
+      <li>{{ pack.name }}</li>
+    {% endfor %}
+  </ul>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="rename_packs_action">
+    {{ rename_form.as_p }}
+    <input type="submit" name="apply" value="Rename" class="default">
+  </form>
+{% endblock %}
