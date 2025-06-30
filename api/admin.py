@@ -18,7 +18,7 @@ class RenamePacksForm(forms.Form):
         help_text="Enter the new name to apply to selected packs."
     )
 
-def rename_packs_action(request, queryset):
+def rename_packs_action(_, request, queryset):
     """Action to rename selected packs."""
     form = None
 
