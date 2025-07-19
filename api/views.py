@@ -29,6 +29,7 @@ def chart_json(request, chart_id):
     """Chart data used to populate song page"""
     chart = Chart.objects.filter(id=chart_id).select_related('chartdata').first()
 
+    chart.npsgraph = chart.npsgraph.replace("NaN", "0.0")
     nps_data = json.loads(chart.npsgraph)
 
     if len(nps_data) > 0:
