@@ -36,6 +36,9 @@ def save_song_chart_data(pack, data):
             saved_songs += 1  # Track new songs added
 
         for chart in parsed.charts:
+            # skip empty charts
+            if chart.chartkey == "Xda39a3ee5e6b4b0d3255bfef95601890afd80709":
+                continue
             if not Chart.objects.filter(song=song, chartkey=chart.chartkey).exists():
                 Chart.objects.create(
                     song=song,
