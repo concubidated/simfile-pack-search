@@ -39,6 +39,7 @@ class PackMinVersion(models.TextChoices):
 class Pack(models.Model):
     """Packs are zip files that container the songs"""
     name = models.CharField(max_length=255, unique=True)
+    altname = models.CharField(max_length=255, blank=True, null=True)
     size = models.BigIntegerField()
     scanned = models.BooleanField()
     sha1sum = models.CharField(max_length=40)
