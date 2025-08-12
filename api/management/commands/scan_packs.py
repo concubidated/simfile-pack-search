@@ -16,7 +16,7 @@ import humanize
 
 from django.core.management.base import BaseCommand
 from django.db.models import Count
-from django.db import IntegrityError
+from django.utils import timezone
 
 from api.models import Pack, Song, Chart, ChartData
 from api.management.scripts import sqlite_query, data_import, chart_parse, utils
@@ -73,8 +73,8 @@ class Command(BaseCommand):
 
                 # rescan the pack but only delete the song/charts
                 Song.objects.filter(pack=db_pack).delete()
-                db_pack.style = {}
-                db_pack.authors = {}
+                db_pack.style = ""
+                db_pack.authors = ""
                 db_pack.save()
             except Pack.DoesNotExist:
                 pass
@@ -127,20 +127,18 @@ class Command(BaseCommand):
             # pack.ini will have some of that too
 
             pack_date = utils.get_newest_zip_file_date(pack_path)
-            try:
-                pack, _ = Pack.objects.get_or_create(
-                    name=name,
-                    size=size,
-                    date_created=pack_date,
-                    sha1sum=pack_hash,
-                    scanned=False,
-                    extras=found_extra,
-                    banner=new_banner,
-                    )
-            except IntegrityError:
-                pack = Pack.objects.get(name=name)
-
-
+            pack, _ = Pack.objects.update_or_create(
+                name=name,
+                defaults={
+                    "size": size,
+                    "date_created": pack_date,
+                    "sha1sum": pack_hash,
+                    "scanned": False,
+                    "extras": found_extra,
+                    "banner": new_banner,
+                    "date_scanned": timezone.now(),
+                }
+            )
             # delete song.db from cache
             Path(f"{outfox_cache_path}/song.db").unlink(missing_ok=True)
 
