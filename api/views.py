@@ -89,3 +89,12 @@ def chart_json(request, chart_id):
             } for pack in chart.common_packs
         ] if hasattr(chart, 'common_packs') else []
     })
+
+def chart_json_by_key(request, chart_key):
+    """Chart data used to populate song page by chart key"""
+    chart = Chart.objects.filter(chartkey=chart_key).select_related('chartdata').first()
+
+    if not chart:
+        return JsonResponse({"error": "Chart not found"}, status=404)
+
+    return chart_json(request, chart.id)
