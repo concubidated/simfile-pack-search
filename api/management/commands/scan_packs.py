@@ -54,6 +54,7 @@ class Command(BaseCommand):
         for i, pack_path in enumerate(packlist[start_index:], start=start_index):
             filename = pack_path.split('/')[-1]
             name, extension = os.path.splitext(filename)
+            rescan = False
             # only support zips, I don't wanna activate winrar
             if extension != ".zip":
                 print(f"Skipping {name} {extension} not supported")
@@ -66,16 +67,12 @@ class Command(BaseCommand):
                     #print(f"Skipping {name} already exists")
                     continue
 
-                ## temp method for now
-                #if not rescan:
-                #    print(f"Skipping {name} already exists")
-                #    continue
-
                 # rescan the pack but only delete the song/charts
                 Song.objects.filter(pack=db_pack).delete()
                 db_pack.style = ""
                 db_pack.authors = ""
                 db_pack.save()
+                rescan = True
             except Pack.DoesNotExist:
                 pass
 
@@ -136,7 +133,6 @@ class Command(BaseCommand):
                     "scanned": False,
                     "extras": found_extra,
                     "banner": new_banner,
-                    "date_scanned": timezone.now(),
                 }
             )
             # delete song.db from cache
@@ -262,18 +258,18 @@ class Command(BaseCommand):
             pack.scanned = 1
             pack.save()
 
-
             # post to discord
-            if os.environ.get("DISCORD_WEBHOOK"):
-                message = {}
-                message["id"] = pack.id
-                message["name"] = pack.name
-                message["size"] =  humanize.naturalsize(pack.size)
-                message["song_count"] = len(songs)
-                if pack.banner:
-                    message["banner"] = pack.banner
-                message["chart_types"] = pack.style
-                utils.discord_webhook(message)
+            if not rescan:
+                if os.environ.get("DISCORD_WEBHOOK"):
+                    message = {}
+                    message["id"] = pack.id
+                    message["name"] = pack.name
+                    message["size"] =  humanize.naturalsize(pack.size)
+                    message["song_count"] = len(songs)
+                    if pack.banner:
+                        message["banner"] = pack.banner
+                    message["chart_types"] = pack.style
+                    utils.discord_webhook(message)
 
             # remove the pack from the working directory before moving on to the next one
             shutil.rmtree(fullpath)
