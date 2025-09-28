@@ -44,7 +44,7 @@ class Pack(models.Model):
     scanned = models.BooleanField()
     sha1sum = models.CharField(max_length=40)
     banner = models.CharField(max_length=64, blank=True)
-    authors = models.JSONField(default=list)
+    authors = models.JSONField(default=list, blank=True)
     types = models.JSONField(default=list)
     style = models.JSONField(default=list)
     packType = models.CharField(max_length=32, choices=PackStyle.choices, blank=True, null=True)
