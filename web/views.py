@@ -81,7 +81,9 @@ def search(request, search_type=None, search_query=None):
                 min_meter=Min("charts__meter"),
                 max_meter=Max("charts__meter")
             )
-            .filter(title__icontains=search_query))
+            .filter(title__icontains=search_query)
+            .order_by("title")
+        )
     elif "artist" in search_type:
         songs = (
             Song.objects.prefetch_related(
@@ -92,7 +94,9 @@ def search(request, search_type=None, search_query=None):
                 min_meter=Min("charts__meter"),
                 max_meter=Max("charts__meter")
             )
-            .filter(artist__icontains=search_query))
+            .filter(artist__icontains=search_query)
+            .order_by("title")
+        )
     elif "credit" in search_type:
         if "Foy" in search_query:
             return HttpResponse("<img src='https://i.imgur.com/tgB48zC.gif'>")
@@ -106,7 +110,9 @@ def search(request, search_type=None, search_query=None):
                 min_meter=Min("charts__meter"),
                 max_meter=Max("charts__meter")
             )
-            .filter(credit__icontains=search_query))
+            .filter(credit__icontains=search_query)
+            .order_by("title")
+        )
     elif "pack" in search_type:
         packs = list(Pack.objects.filter(name__icontains=search_query)
                      .annotate(song_count=Count('songs')).order_by("name"))
