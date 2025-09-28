@@ -103,7 +103,11 @@ def find_image(path):
     best_match = None
 
     for ext in bn_types:
-        files = [os.path.join(path, f) for f in os.listdir(path) if f.lower().endswith(ext)]
+        files = [
+            os.path.join(path, f)
+            for f in os.listdir(path)
+            if f.lower().endswith(ext) and os.path.isfile(os.path.join(path, f))
+        ]
         valid_files = [f for f in files if not ignore_pattern.search(os.path.basename(f))]
 
         # Check for a preferred file
