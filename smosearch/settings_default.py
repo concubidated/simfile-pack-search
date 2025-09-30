@@ -54,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'smosearch.urls'
@@ -83,11 +84,11 @@ WSGI_APPLICATION = 'smosearch.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db',
-        'USER': 'user',
-        'PASSWORD': 'password',
-        'HOST': 'localhost',  # or your MySQL server
-        'PORT': '3306',
+        'NAME': os.environ.get("DB_NAME", "django_db"),
+        'USER': os.environ.get("DB_USER", "django"),
+        'PASSWORD': os.environ.get("DB_PASSWORD", "password"),
+        'HOST': os.environ.get("DB_HOST", "db"),
+        'PORT': os.environ.get("DB_PORT", "3306"),
     }
 }
 
@@ -126,12 +127,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-#STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-# Additional directories to look for static files during development
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # The 'static' directory in your project
-]
+if DEBUG:
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'static'),
+    ]
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
