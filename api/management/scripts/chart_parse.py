@@ -140,7 +140,7 @@ def parse_ssc_data(data):
         "meter": re.compile(r"^#METER:(.*);"),
         "credit": re.compile(r"^#CREDIT:(.*);"),
         "lastsecondhint": re.compile(r"^#LASTSECONDHINT:(.*);"),
-        "npspeak": re.compile(r"^#NPSPEAK:(.*);"),
+        "npspeak": re.compile(r"^#NPSPEAK:(.*)"),
         "npsgraph": re.compile(r"^#NPSGRAPH:(.*);"),
         "chartkey": re.compile(r"^#CHARTKEY:(.*);"),
         "taps": re.compile(r"^#RADARVALUES:(.*);")
