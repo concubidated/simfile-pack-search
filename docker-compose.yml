@@ -66,7 +66,7 @@ services:
   web:
     build: .
     container_name: django_web
-    command: gunicorn smosearch.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn smosearch.wsgi:application --bind 0.0.0.0:8000 --timeout 120
     volumes:
       - /data/media:/app/media
       - /data/working:/data/working
