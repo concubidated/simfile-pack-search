@@ -10,3 +10,4 @@ gunicorn
 lz4
 requests
 django-q2
+pylint-django
