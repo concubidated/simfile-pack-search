@@ -199,7 +199,10 @@ def cleanup_dir(directory):
 
 def discord_webhook(pack):
     """sends a post to Discord"""
-    url = os.environ.get("DISCORD_WEBHOOK")
+    if "rescan" in pack:
+        url = os.environ.get("DISCORD_RESCAN_WEBHOOK")
+    else:
+        url = os.environ.get("DISCORD_WEBHOOK")
 
     chart_type_list = '\n'.join(f"• {ct}" for ct in sorted(pack["chart_types"]))
     name = pack["name"]

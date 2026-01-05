@@ -270,6 +270,18 @@ class Command(BaseCommand):
                         message["banner"] = pack.banner
                     message["chart_types"] = pack.style
                     utils.discord_webhook(message)
+            else:
+                if os.environ.get("DISCORD_RESCAN_WEBHOOK"):
+                    message = {}
+                    message["rescan"] = True
+                    message["id"] = pack.id
+                    message["name"] = f"{pack.name} (Rescan)"
+                    message["size"] = humanize.naturalsize(pack.size)
+                    message["song_count"] = len(songs)
+                    if pack.banner:
+                        message["banner"] = pack.banner
+                    message["chart_types"] = pack.style
+                    utils.discord_webhook(message)
 
             # remove the pack from the working directory before moving on to the next one
             shutil.rmtree(fullpath)
