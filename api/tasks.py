@@ -1,3 +1,4 @@
+"""api/tasks"""
 import io
 import os
 import traceback
@@ -33,7 +34,7 @@ def scan_packs_task(run_id: int) -> None:
     try:
         # Linux/Unix file lock
         import fcntl
-        with open(lock_path, "w") as lockf:
+        with open(lock_path, "w", encoding="utf-8") as lockf:
             fcntl.flock(lockf, fcntl.LOCK_EX)
 
             with redirect_stdout(buf), redirect_stderr(buf):
@@ -54,4 +55,3 @@ def scan_packs_task(run_id: int) -> None:
 
     finally:
         close_old_connections()
-

@@ -19,10 +19,14 @@ def pack_list(request):
                 .annotate(song_count=Count('songs')).order_by("name"))
     packs.sort(key=lambda pack: natural_sort_key(pack.name))
 
-    out = "ID, Pack Name, Song Count, Size, Sync, PackType, Substyle, Min Version\n"
-    for pack in packs:
-        out += f"{pack.id}, \"{pack.name}\", {pack.song_count}, {pack.size}, {pack.sync}, {pack.packType}, {pack.substyle}, {pack.min_version}"
-        out += "\n"
+    out = "ID, Pack Name, Song Count, Size, Sync, PackType, Substyle, Min Version"
+    for p in packs:
+        cols = (
+            p.id, f'"{p.name}"', p.song_count, p.size,
+            p.sync, p.packType, p.substyle, p.min_version,
+        )
+    out += ", ".join(map(str, cols)) + "\n"
+
     return HttpResponse(f"<pre>{out}</pre>")
 
 def chart_json(request, chart_id):

@@ -3,6 +3,7 @@ from django import forms
 from django.shortcuts import render, redirect
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
+from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.db.models import Count
 from django.http import HttpRequest
@@ -13,7 +14,6 @@ from django_q.tasks import async_task
 
 from .models import ScanPacksRun, Song, Chart, Pack, ChartData
 from .utils.rename_pack import rename_pack_file
-from django.core.paginator import Paginator
 
 admin.site.register(ChartData)
 
@@ -59,7 +59,6 @@ class ScanPacksRunAdmin(admin.ModelAdmin):
 class NoCountPaginator(Paginator):
     """Paginator that avoids COUNT(*) on very large tables."""
 
-    @property
     def count(self):
         # Don't hit the DB for COUNT(*); return a big dummy value instead.
         # Admin will still work; total pages just won't be exact.
@@ -133,6 +132,7 @@ class PackAdmin(admin.ModelAdmin):
     song_count.short_description = "Songs"
 
 class ChartInline(admin.TabularInline):
+    """Chart Inline"""
     model = Chart
     extra = 0
     fields = ("charttype", "difficulty", "meter", "author")
@@ -181,11 +181,14 @@ class ChartAdmin(admin.ModelAdmin):
         return qs
 
     def song_title(self, obj):
+        """Returns the song title"""
         return obj.song.title
+
     song_title.admin_order_field = "song__title"
 
     def pack_name(self, obj):
+        """Returns the pack Name"""
         pack = getattr(obj.song, "pack", None)
         return pack.name if pack else "—"
-    pack_name.admin_order_field = "song__pack__name"
 
+    pack_name.admin_order_field = "song__pack__name"

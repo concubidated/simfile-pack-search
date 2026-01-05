@@ -121,7 +121,9 @@ class ChartData(models.Model):
         return f"Notedata for {self.chart.__str__()}"
 
 class ScanPacksRun(models.Model):
+    """ScanPacksRun contains the history for pack scans"""
     class Status(models.TextChoices):
+        """Status is the possible results from the run"""
         QUEUED = "queued", "Queued"
         RUNNING = "running", "Running"
         SUCCESS = "success", "Success"
@@ -134,7 +136,9 @@ class ScanPacksRun(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
 
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    created_by = models.ForeignKey(
+            settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+            )
 
     q_task_id = models.CharField(max_length=64, blank=True, default="")
     output = models.TextField(blank=True, default="")
