@@ -9,3 +9,4 @@ pylint
 gunicorn
 lz4
 requests
+django-q2

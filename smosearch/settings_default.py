@@ -42,9 +42,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'debug_toolbar',
+    'django_q',
     'api',
     'web',
 ]
+
+Q_CLUSTER = {
+    "name": "DjangoQ",
+    "workers": 4,
+    "timeout": 60 * 60 * 3,
+    "retry": 60*60*3.1,
+    "queue_limit": 50,
+    "bulk": 10,
+    "orm": "default",
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

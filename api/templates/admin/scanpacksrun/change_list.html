@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block object-tools-items %}
+  <li>
+    <form action="{% url 'admin:scanpacksrun_run' 'staging' %}" method="post" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="button">Run scan (staging)</button>
+    </form>
+  </li>
+{% endblock %}
+

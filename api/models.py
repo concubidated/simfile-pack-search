@@ -1,6 +1,8 @@
 """Api Models"""
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
+
 
 class PackStyle(models.TextChoices):
     """PackStyles are the different play styles of the packs"""
@@ -38,7 +40,7 @@ class PackMinVersion(models.TextChoices):
 
 class Pack(models.Model):
     """Packs are zip files that container the songs"""
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255, unique=True, db_index=True)
     altname = models.CharField(max_length=255, blank=True, null=True)
     size = models.BigIntegerField()
     scanned = models.BooleanField()
@@ -70,9 +72,9 @@ class Pack(models.Model):
 class Song(models.Model):
     """Songs are the folders that container the charts"""
     pack = models.ForeignKey(Pack, on_delete=models.CASCADE, related_name="songs") # Link to Packs
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, db_index=True)
     credit = models.JSONField(default=list)
-    artist = models.CharField(max_length=255)
+    artist = models.CharField(max_length=255, db_index=True)
     subtitle = models.CharField(max_length=255)
     titletranslit = models.CharField(max_length=255, blank=True, null=True)
     artisttranslit = models.CharField(max_length=255, blank=True, null=True)
@@ -94,14 +96,14 @@ class Song(models.Model):
 class Chart(models.Model):
     """Charts contain the notedata"""
     song = models.ForeignKey(Song, on_delete=models.CASCADE, related_name="charts")  # Link to Song
-    charttype = models.CharField(max_length=50)
+    charttype = models.CharField(max_length=50, db_index=True)
     difficulty = models.CharField(max_length=50)
     meter = models.IntegerField()
     author = models.CharField(max_length=128)
     lastsecondhint = models.FloatField()
     npspeak = models.FloatField()
     npsgraph = models.JSONField(default=list)
-    chartkey = models.CharField(max_length=64)
+    chartkey = models.CharField(max_length=64, db_index=True)
     taps = models.JSONField(default=list)
 
     class Meta:
@@ -117,3 +119,26 @@ class ChartData(models.Model):
 
     def __str__(self):
         return f"Notedata for {self.chart.__str__()}"
+
+class ScanPacksRun(models.Model):
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        RUNNING = "running", "Running"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+
+    packdir = models.CharField(max_length=512)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.QUEUED)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+
+    q_task_id = models.CharField(max_length=64, blank=True, default="")
+    output = models.TextField(blank=True, default="")
+    error = models.TextField(blank=True, default="")
+
+    def __str__(self):
+        return f"{self.packdir} [{self.status}] #{self.pk} by {self.created_by}"
