@@ -19,9 +19,9 @@ def pack_list(request):
                 .annotate(song_count=Count('songs')).order_by("name"))
     packs.sort(key=lambda pack: natural_sort_key(pack.name))
 
-    out = "ID, Pack Name, Song Count, Size\n"
+    out = "ID, Pack Name, Song Count, Size, Sync, PackType, Substyle, Min Version\n"
     for pack in packs:
-        out += f"{pack.id}, \"{pack.name}\", {pack.song_count}, {pack.size}"
+        out += f"{pack.id}, \"{pack.name}\", {pack.song_count}, {pack.size}, {pack.sync}, {pack.packType}, {pack.substyle}, {pack.min_version}"
         out += "\n"
     return HttpResponse(f"<pre>{out}</pre>")
 
