@@ -4,7 +4,9 @@ import os
 import json
 import string
 from collections import OrderedDict
+from urllib.parse import quote
 from django.views.decorators.cache import cache_page
+from django.utils.http import content_disposition_header
 from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
@@ -38,12 +40,13 @@ def download_pack(request, pack_id):
     pack = get_object_or_404(Pack, id=pack_id)
 
     file_name = f"{pack.name}.zip"
+    uri_name = quote(file_name, safe="")
 
     Pack.objects.filter(id=pack_id).update(downloads=F('downloads') + 1)
     response = HttpResponse()
-    response["X-Accel-Redirect"] = f"/packs/{file_name}"
-    response["Content-Disposition"] = f'attachment; filename="{file_name}"'
-    response["Content-Type"] = ""
+    response["X-Accel-Redirect"] = f"/packs/{uri_name}"
+    response["Content-Disposition"] = content_disposition_header(True, file_name)
+    response["Content-Type"] = "application/zip"
     return response
 
 def download_mirror(request, pack_id):
