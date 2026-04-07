@@ -15,6 +15,46 @@ from django.db.models import Prefetch, Min, Max, Count, F, Value
 
 from api.models import Pack, Song, Chart, ChartData
 
+MIN_SEARCH_QUERY_LEN = 2
+SEARCH_MAX_RESULTS = 1000
+
+PACK_LIST_STYLE_FILTERS = {
+    "dance-single": "Dance Single",
+    "dance-double": "Dance Double",
+    "dance-solo": "Dance Solo",
+    "pump-single": "Pump Single",
+    "pump-double": "Pump Double",
+    "smx-single": "SMX Single",
+    "smx-double10": "SMX Double 10",
+    "techno-single8": "Techno Single 8",
+    "techno-single9": "Techno Single 9",
+}
+
+
+def _song_search_base_queryset():
+    """Shared prefetch/annotate for search result rows (keeps columns narrow to reduce memory)."""
+    charts_qs = Chart.objects.only("meter", "difficulty", "charttype", "song_id")
+    return (
+        Song.objects.prefetch_related(Prefetch("charts", queryset=charts_qs))
+        .select_related("pack")
+        .annotate(
+            min_meter=Min("charts__meter"),
+            max_meter=Max("charts__meter"),
+        )
+        .only(
+            "id",
+            "title",
+            "artist",
+            "credit",
+            "banner",
+            "pack__id",
+            "pack__name",
+            "pack__banner",
+        )
+        .order_by("title")
+    )
+
+
 def natural_sort_key(text):
     """we are hoomans, lets sort like it"""
     # Determine top-level priority based on first character
@@ -72,59 +112,68 @@ def search(request, search_type=None, search_query=None):
     if search_type not in valid_types:
         return redirect("/")
 
-    charts_qs = Chart.objects.only("meter", "difficulty", "charttype", "song_id")
-    songs = None
+    q = (search_query or "").strip()
+    if len(q) < MIN_SEARCH_QUERY_LEN:
+        ctx = {
+            "search_query": search_query or "",
+            "search_error": (
+                f"Please enter at least {MIN_SEARCH_QUERY_LEN} characters "
+            ),
+        }
+        if "pack" in search_type:
+            ctx["packs"] = []
+            ctx["styles"] = PACK_LIST_STYLE_FILTERS
+            return render(request, "pack_list.html", ctx)
+        ctx["songs"] = []
+        return render(request, "search.html", ctx)
+
     if "title" in search_type:
-        songs = (
-            Song.objects.prefetch_related(
-                Prefetch("charts", queryset=charts_qs)
-            )
-            .select_related("pack")
-            .annotate(
-                min_meter=Min("charts__meter"),
-                max_meter=Max("charts__meter")
-            )
-            .filter(title__icontains=search_query)
-            .order_by("title")
-        )
+        songs_qs = _song_search_base_queryset().filter(title__icontains=q)
+        songs = list(songs_qs[: SEARCH_MAX_RESULTS + 1])
     elif "artist" in search_type:
-        songs = (
-            Song.objects.prefetch_related(
-                Prefetch("charts", queryset=charts_qs)
-            )
-            .select_related("pack")
-            .annotate(
-                min_meter=Min("charts__meter"),
-                max_meter=Max("charts__meter")
-            )
-            .filter(artist__icontains=search_query)
-            .order_by("title")
-        )
+        songs_qs = _song_search_base_queryset().filter(artist__icontains=q)
+        songs = list(songs_qs[: SEARCH_MAX_RESULTS + 1])
     elif "credit" in search_type:
-        if "Foy" in search_query:
+        if "Foy" in q:
             return HttpResponse("<img src='https://i.imgur.com/tgB48zC.gif'>")
 
-        songs = (
-            Song.objects.prefetch_related(
-                Prefetch("charts", queryset=charts_qs)
-            )
-            .select_related("pack")
-            .annotate(
-                min_meter=Min("charts__meter"),
-                max_meter=Max("charts__meter")
-            )
-            .filter(credit__icontains=search_query)
-            .order_by("title")
-        )
+        songs_qs = _song_search_base_queryset().filter(credit__icontains=q)
+        songs = list(songs_qs[: SEARCH_MAX_RESULTS + 1])
     elif "pack" in search_type:
-        packs = list(Pack.objects.filter(name__icontains=search_query)
-                     .annotate(song_count=Count('songs')).order_by("name"))
+        packs_qs = Pack.objects.filter(name__icontains=q).annotate(
+            song_count=Count("songs")
+        )
+        packs = list(packs_qs)
         packs.sort(key=lambda pack: natural_sort_key(pack.name))
-        return render(request, "pack_list.html", {"packs": packs, "search_query": search_query})
-    else:
-        redirect("/")
+        search_truncated = len(packs) > SEARCH_MAX_RESULTS
+        if search_truncated:
+            packs = packs[:SEARCH_MAX_RESULTS]
+        return render(
+            request,
+            "pack_list.html",
+            {
+                "packs": packs,
+                "search_query": q,
+                "search_truncated": search_truncated,
+                "search_max_results": SEARCH_MAX_RESULTS,
+                "styles": PACK_LIST_STYLE_FILTERS,
+            },
+        )
 
-    return render(request, "search.html", {"songs": songs, "search_query": search_query})
+    search_truncated = len(songs) > SEARCH_MAX_RESULTS
+    if search_truncated:
+        songs = songs[:SEARCH_MAX_RESULTS]
+
+    return render(
+        request,
+        "search.html",
+        {
+            "songs": songs,
+            "search_query": q,
+            "search_truncated": search_truncated,
+            "search_max_results": SEARCH_MAX_RESULTS,
+        },
+    )
 
 def pack_view(request, packid):
     """list all the songs in a pack"""
@@ -288,21 +337,9 @@ def pack_list(request):
     packs = list(Pack.objects.annotate(song_count=Count('songs')).order_by("name"))
     packs.sort(key=lambda pack: natural_sort_key(pack.name))
 
-    styles = {
-        "dance-single": "Dance Single",
-        "dance-double": "Dance Double",
-        "dance-solo": "Dance Solo",
-        "pump-single": "Pump Single",
-        "pump-double": "Pump Double",
-        "smx-single": "SMX Single",
-        "smx-double10": "SMX Double 10",
-        "techno-single8": "Techno Single 8",
-        "techno-single9": "Techno Single 9",
-    }
-
     context = {
         "packs": packs,
-        "styles": styles
+        "styles": PACK_LIST_STYLE_FILTERS,
     }
 
     return render(request, "pack_list.html", context)

@@ -11,6 +11,15 @@
             <a class="btn btn-link text-blue text-decoration-none p-0" href="/"><span class="me-2">←</span>Back to Home</a>
             {% include 'components/search-bar.html' %}
 
+            {% if search_error %}
+            <div class="alert alert-warning mb-3" role="alert">{{ search_error }}</div>
+            {% endif %}
+            {% if search_truncated %}
+            <div class="alert alert-info mb-3" role="alert">
+                Showing the first {{ search_max_results }} matches.
+            </div>
+            {% endif %}
+
             {% if styles|length > 1 %}
             <div class="card mb-3">
                     <div class="card-header"><h5 class="card-title text-white mb-0">Filter By Type</h5></div>

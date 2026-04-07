@@ -13,7 +13,7 @@
                             </div>
                             <div class="col">
                                 <div class="input-group">
-                                    <span class="input-group-text"><span class="">🔍</span></span><input type="text" id="search" name="search" class="form-control" {% if search_query %} value="{{ search_query }}" {% endif %} placeholder="Search packs..." />
+                                    <span class="input-group-text"><span class="">🔍</span></span><input type="text" id="search" name="search" class="form-control" minlength="2" {% if search_query %} value="{{ search_query }}" {% endif %} placeholder="Search (at least 2 characters)..." title="Enter at least 2 characters" />
                                     <button type="submit" name="submit" class="btn btn-primary">Search</button>
                                 </div>
                             </div>

@@ -7,6 +7,15 @@
 
         {% include 'components/search-bar.html' %}
 
+        {% if search_error %}
+        <div class="alert alert-warning mb-3" role="alert">{{ search_error }}</div>
+        {% endif %}
+        {% if search_truncated %}
+        <div class="alert alert-info mb-3" role="alert">
+            Showing the first {{ search_max_results }} matches.
+        </div>
+        {% endif %}
+
         <div class="card mb-4">
             <div class="table-responsive">
             <table id="songTable"  class="table table-dark table-hover mb-0">
