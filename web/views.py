@@ -268,9 +268,18 @@ def download_mirror(request, pack_id):
 def search(request, search_type=None, search_query=None):
     """search for a song"""
     if not search_type or not search_query:
-        search_type = request.POST.get("type")
-        search_query = request.POST.get("search")
-        return redirect(f"/search/{search_type}/{search_query}")
+        post_type = request.POST.get("type")
+        post_search = request.POST.get("search")
+        if post_type is not None and post_search is not None:
+            q_post = (post_search or "").strip()
+            if q_post:
+                return redirect(f"/search/{post_type}/{quote(q_post, safe='')}")
+            search_type = post_type
+            search_query = post_search
+        elif request.method == "POST":
+            return redirect("/")
+        else:
+            return redirect("/")
 
     valid_types = ["title", "artist", "credit", "pack"]
     if search_type not in valid_types:
@@ -484,7 +493,7 @@ def chart_list(request, songid):
     return render(request, "song.html", context)
 
 def pack_list(request):
-    """pack list (rows loaded via DataTables server-side /packs/data)."""
+    """pack list (rows loaded via DataTables server-side /api/packs/datatables)."""
     ctx = {"pack_name_scope": ""}
     ctx.update(_pack_list_page_context())
     return render(request, "pack_list.html", ctx)
