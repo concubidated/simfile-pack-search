@@ -15,19 +15,26 @@ def natural_sort_key(text):
 
 def pack_list(request):
     """api call to list packs"""
-    packs = list(Pack.objects
-                .annotate(song_count=Count('songs')).order_by("name"))
+    packs = list(
+        Pack.objects.annotate(song_count=Count("songs")).order_by("name")
+    )
     packs.sort(key=lambda pack: natural_sort_key(pack.name))
 
-    out = "ID, Pack Name, Song Count, Size, Sync, PackType, Substyle, Min Version"
+    out = "ID, Pack Name, Song Count, Size, Sync, PackType, Substyle, Min Version\n"
     for p in packs:
         cols = (
-            p.id, f'"{p.name}"', p.song_count, p.size,
-            p.sync, p.packType, p.substyle, p.min_version,
+            p.id,
+            f'"{p.name}"',
+            p.song_count,
+            p.size,
+            p.sync,
+            p.packType,
+            p.substyle,
+            p.min_version,
         )
-    out += ", ".join(map(str, cols)) + "\n"
+        out += ", ".join(map(str, cols)) + "\n"
 
-    return HttpResponse(f"<pre>{out}</pre>")
+    return HttpResponse(out, content_type="text/plain")
 
 def chart_json(request, chart_id):
     """Chart data used to populate song page"""
@@ -96,9 +103,37 @@ def chart_json(request, chart_id):
 
 def chart_json_by_key(request, chart_key):
     """Chart data used to populate song page by chart key"""
-    chart = Chart.objects.filter(chartkey=chart_key).select_related('chartdata').first()
+    chart = Chart.objects.filter(chartkey=chart_key).first()
 
     if not chart:
         return JsonResponse({"error": "Chart not found"}, status=404)
 
     return chart_json(request, chart.id)
+
+def search(request):
+    """Search for packs"""
+    search_query = request.GET.get("query")
+    type = request.GET.get("type")
+
+    if type == "title":
+        packs = (Pack.objects.filter(songs__title__icontains=search_query)
+        .distinct().order_by("name"))
+    elif type == "artist":
+        packs = (Pack.objects.filter(songs__artist__icontains=search_query)
+        .distinct().order_by("name"))
+    elif type == "credit":
+        packs = (Pack.objects.filter(songs__credit__icontains=search_query)
+        .distinct().order_by("name"))
+    elif type == "pack":
+        packs = (Pack.objects.filter(name__icontains=search_query)
+        .order_by("name"))
+
+    packs_list = []
+    for pack in packs:
+        packs_list.append({
+            "id": pack.id,
+            "name": pack.name,
+            "songs_count": pack.songs.count(),
+            "type": pack.types
+        })
+    return JsonResponse({"results": packs_list})
