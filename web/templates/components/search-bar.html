@@ -1,22 +1,54 @@
                 <div class="row g-3 mb-4 align-items-end">
                     <div class="col-lg-12">
-                        <div class="row g-2">
-                            <div class="col-auto">
-                                <form class="" action="/search" method="POST">
-                                {% csrf_token %}
-                                <select class="form-select" title="Type" name="type">
-                                    <option {% if "title" in request.path %}selected{% endif %} value="title">Song Title</option>
-                                    <option {% if "artist" in request.path %}selected{% endif %} value="artist">Artist</option>
-                                    <option {% if "pack" in request.path %}selected{% endif %} value="pack">Pack Name</option>
-                                    <option {% if "credit" in request.path %}selected{% endif %} value="credit">Chart Author</option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <div class="input-group">
-                                    <span class="input-group-text"><span class="">🔍</span></span><input type="text" id="search" name="search" class="form-control" minlength="2" {% if search_query %} value="{{ search_query }}" {% endif %} placeholder="Search (at least 2 characters)..." title="Enter at least 2 characters" />
-                                    <button type="submit" name="submit" class="btn btn-primary">Search</button>
+                        <form class="" action="/search" method="POST">
+                            {% csrf_token %}
+                            <div class="row g-2">
+                                <div class="col-auto">
+                                    <select class="form-select" title="Type" name="type">
+                                        <option {% if "title" in request.path %}selected{% endif %} value="title">Song Title</option>
+                                        <option {% if "artist" in request.path %}selected{% endif %} value="artist">Artist</option>
+                                        <option {% if "pack" in request.path %}selected{% endif %} value="pack">Pack Name</option>
+                                        <option {% if "credit" in request.path %}selected{% endif %} value="credit">Chart Author</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><span class="">🔍</span></span><input type="text" id="search" name="search" class="form-control" minlength="2" {% if search_query %} value="{{ search_query }}" {% endif %} placeholder="Search (at least 2 characters)..." title="Enter at least 2 characters" />
+                                        <button type="submit" name="submit" class="btn btn-primary">Search</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                            {% if show_search_exact_toggle %}
+                            <div class="row mt-2">
+                                <div class="col-12 col-md-8">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="exact" value="1" role="switch" id="toggleSearchExact" {% if search_exact %}checked{% endif %}>
+                                        <label class="form-check-label text-gray-400" for="toggleSearchExact">Exact Matches Only</label>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </form>
                     </div>
                 </div>
+                {% if show_search_exact_toggle %}
+                <script>
+                (function () {
+                    var cb = document.getElementById('toggleSearchExact');
+                    if (!cb) return;
+                    cb.addEventListener('change', function () {
+                        var path = window.location.pathname;
+                        var parts = path.split('/').filter(Boolean);
+                        if (parts.length >= 3 && parts[0] === 'search') {
+                            var url = new URL(window.location.href);
+                            if (this.checked) {
+                                url.searchParams.set('exact', '1');
+                            } else {
+                                url.searchParams.delete('exact');
+                            }
+                            window.location.href = url.toString();
+                        }
+                    });
+                })();
+                </script>
+                {% endif %}

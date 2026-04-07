@@ -61,7 +61,8 @@
             <div class="card mb-4">
                 <div class="table-responsive">
                     <table id="packTable" class="table table-dark table-hover mb-0"
-                           data-pack-name-scope="{{ pack_name_scope|default:''|escape }}">
+                           data-pack-name-scope="{{ pack_name_scope|default:''|escape }}"
+                           data-pack-name-exact="{% if search_exact %}true{% else %}false{% endif %}">
                     <thead class="">
                         <tr>
                         <th class="no-sort" style="width: 64px;"></th>
@@ -122,6 +123,8 @@ $(document).ready(function () {
     let activeChartStyleFilters = [];
     let activeSubstyles = [];
     const packNameScope = $('#packTable').data('pack-name-scope') || '';
+    const packNameExact = $('#packTable').data('pack-name-exact') === true
+        || $('#packTable').data('pack-name-exact') === 'true';
 
     function refreshSubstyleCardVisibility() {
         var $card = $('#substyleFiltersCard');
@@ -153,6 +156,7 @@ $(document).ready(function () {
             url: '{% url "pack_list_datatables" %}',
             data: function (d) {
                 d.pack_name_scope = packNameScope;
+                d.pack_name_exact = packNameExact ? '1' : '';
                 d.style_filters = activeChartStyleFilters.join(',');
                 d.pack_substyle_filters = activeSubstyles.join(',');
             }

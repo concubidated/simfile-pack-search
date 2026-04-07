@@ -23,6 +23,11 @@ from api.models import Pack, Song, Chart, ChartData, PackSubStyle
 MIN_SEARCH_QUERY_LEN = 2
 SEARCH_MAX_RESULTS = 1000
 
+
+def _request_wants_search_exact(request):
+    v = (request.GET.get("exact") or request.POST.get("exact") or "").strip().lower()
+    return v in ("1", "true", "on", "yes")
+
 PACK_LIST_STYLE_FILTERS = {
     "dance-single": "Dance Single",
     "dance-double": "Dance Double",
@@ -131,6 +136,12 @@ def pack_list_datatables(request):
 
     search_value = (request.GET.get("search[value]", "") or "").strip()
     pack_name_scope = (request.GET.get("pack_name_scope", "") or "").strip()
+    pack_name_exact = (request.GET.get("pack_name_exact", "") or "").strip().lower() in (
+        "1",
+        "true",
+        "on",
+        "yes",
+    )
     style_filters_raw = request.GET.get("style_filters", "") or ""
     style_filters = [s.strip() for s in style_filters_raw.split(",") if s.strip()]
 
@@ -162,7 +173,10 @@ def pack_list_datatables(request):
         .exclude(types=[])
     )
     if pack_name_scope:
-        base_qs = base_qs.filter(name__icontains=pack_name_scope)
+        if pack_name_exact:
+            base_qs = base_qs.filter(name__iexact=pack_name_scope)
+        else:
+            base_qs = base_qs.filter(name__icontains=pack_name_scope)
 
     records_total = base_qs.count()
 
@@ -273,7 +287,10 @@ def search(request, search_type=None, search_query=None):
         if post_type is not None and post_search is not None:
             q_post = (post_search or "").strip()
             if q_post:
-                return redirect(f"/search/{post_type}/{quote(q_post, safe='')}")
+                exact_q = "?exact=1" if _request_wants_search_exact(request) else ""
+                return redirect(
+                    f"/search/{post_type}/{quote(q_post, safe='')}{exact_q}"
+                )
             search_type = post_type
             search_query = post_search
         elif request.method == "POST":
@@ -285,6 +302,7 @@ def search(request, search_type=None, search_query=None):
     if search_type not in valid_types:
         return redirect("/")
 
+    search_exact = _request_wants_search_exact(request)
     q = (search_query or "").strip()
     if len(q) < MIN_SEARCH_QUERY_LEN:
         ctx = {
@@ -292,6 +310,8 @@ def search(request, search_type=None, search_query=None):
             "search_error": (
                 f"Please enter at least {MIN_SEARCH_QUERY_LEN} characters "
             ),
+            "search_exact": False,
+            "show_search_exact_toggle": False,
         }
         if "pack" in search_type:
             ctx["pack_name_scope"] = ""
@@ -301,21 +321,39 @@ def search(request, search_type=None, search_query=None):
         return render(request, "search.html", ctx)
 
     if "title" in search_type:
-        songs_qs = _song_search_base_queryset().filter(title__icontains=q)
+        if search_exact:
+            songs_qs = _song_search_base_queryset().filter(title__iexact=q)
+        else:
+            songs_qs = _song_search_base_queryset().filter(title__icontains=q)
         songs = list(songs_qs[: SEARCH_MAX_RESULTS + 1])
     elif "artist" in search_type:
-        songs_qs = _song_search_base_queryset().filter(artist__icontains=q)
+        if search_exact:
+            songs_qs = _song_search_base_queryset().filter(artist__iexact=q)
+        else:
+            songs_qs = _song_search_base_queryset().filter(artist__icontains=q)
         songs = list(songs_qs[: SEARCH_MAX_RESULTS + 1])
     elif "credit" in search_type:
         if "Foy" in q:
             return HttpResponse("<img src='https://i.imgur.com/tgB48zC.gif'>")
 
         songs_qs = _song_search_base_queryset().filter(credit__icontains=q)
-        songs = list(songs_qs[: SEARCH_MAX_RESULTS + 1])
+        if search_exact:
+            songs = []
+            for s in songs_qs.iterator(chunk_size=500):
+                if any(
+                    str(c).strip().lower() == q.lower() for c in (s.credit or [])
+                ):
+                    songs.append(s)
+                if len(songs) > SEARCH_MAX_RESULTS:
+                    break
+        else:
+            songs = list(songs_qs[: SEARCH_MAX_RESULTS + 1])
     elif "pack" in search_type:
         ctx = {
             "search_query": q,
             "pack_name_scope": q,
+            "search_exact": search_exact,
+            "show_search_exact_toggle": True,
         }
         ctx.update(_pack_list_page_context())
         return render(request, "pack_list.html", ctx)
@@ -332,6 +370,8 @@ def search(request, search_type=None, search_query=None):
             "search_query": q,
             "search_truncated": search_truncated,
             "search_max_results": SEARCH_MAX_RESULTS,
+            "search_exact": search_exact,
+            "show_search_exact_toggle": True,
         },
     )
 
