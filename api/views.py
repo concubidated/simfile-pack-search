@@ -110,25 +110,76 @@ def chart_json_by_key(request, chart_key):
 
     return chart_json(request, chart.id)
 
+def _request_wants_exact(request):
+    v = (request.GET.get("exact") or "").strip().lower()
+    return v in ("1", "true", "on", "yes")
+
+
+def _matching_song_titles(pack, query_type, q, exact):
+    """Titles of songs in this pack that satisfy the search (empty for type=pack)."""
+    if query_type == "pack":
+        return []
+    songs = pack.songs.all()
+    if query_type == "title":
+        qs = songs.filter(title__iexact=q) if exact else songs.filter(title__icontains=q)
+    elif query_type == "artist":
+        qs = songs.filter(artist__iexact=q) if exact else songs.filter(artist__icontains=q)
+    elif query_type == "credit":
+        if exact:
+            titles = []
+            for song in songs.iterator():
+                if any(
+                    str(c).strip().lower() == q.lower()
+                    for c in (song.credit or [])
+                ):
+                    titles.append(song.title)
+            return sorted(set(titles), key=natural_sort_key)
+        qs = songs.filter(credit__icontains=q)
+    else:
+        return []
+    titles = list(qs.values_list("title", flat=True))
+    return sorted(set(titles), key=natural_sort_key)
+
+
 def search(request):
     """Search for packs"""
     search_query = request.GET.get("query")
     query_type = request.GET.get("type")
+    exact = _request_wants_exact(request)
+    q = (search_query or "").strip()
 
+    if not q or query_type not in ("title", "artist", "credit", "pack"):
+        return JsonResponse({"results": []})
+
+    packs = Pack.objects.none()
     if query_type == "title":
-        packs = (Pack.objects.filter(songs__title__icontains=search_query)
-        .distinct().order_by("name"))
+        flt = {"songs__title__iexact": q} if exact else {"songs__title__icontains": q}
+        packs = Pack.objects.filter(**flt).distinct().order_by("name")
     elif query_type == "artist":
-        packs = (Pack.objects.filter(songs__artist__icontains=search_query)
-        .distinct().order_by("name"))
+        flt = {"songs__artist__iexact": q} if exact else {"songs__artist__icontains": q}
+        packs = Pack.objects.filter(**flt).distinct().order_by("name")
     elif query_type == "credit":
-        packs = (Pack.objects.filter(songs__credit__icontains=search_query)
-        .distinct().order_by("name"))
+        if exact:
+            pack_ids = set()
+            candidates = Song.objects.filter(credit__icontains=q).only(
+                "pack_id", "credit"
+            )
+            for song in candidates.iterator(chunk_size=500):
+                if any(
+                    str(c).strip().lower() == q.lower()
+                    for c in (song.credit or [])
+                ):
+                    pack_ids.add(song.pack_id)
+            packs = Pack.objects.filter(id__in=pack_ids).order_by("name")
+        else:
+            packs = (
+                Pack.objects.filter(songs__credit__icontains=q)
+                .distinct()
+                .order_by("name")
+            )
     elif query_type == "pack":
-        packs = (Pack.objects.filter(name__icontains=search_query)
-        .order_by("name"))
-    else:
-        packs = Pack.objects.none()
+        flt = {"name__iexact": q} if exact else {"name__icontains": q}
+        packs = Pack.objects.filter(**flt).order_by("name")
 
     packs_list = []
     for pack in packs:
@@ -136,6 +187,7 @@ def search(request):
             "id": pack.id,
             "name": pack.name,
             "songs_count": pack.songs.count(),
-            "type": pack.types
+            "type": pack.types,
+            "matching_songs": _matching_song_titles(pack, query_type, q, exact),
         })
     return JsonResponse({"results": packs_list})
