@@ -6,14 +6,19 @@ import string
 from collections import OrderedDict
 from urllib.parse import quote
 from django.views.decorators.cache import cache_page
+from django.views.decorators.http import require_GET
 from django.utils.http import content_disposition_header
 from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
-from django.db.models import Prefetch, Min, Max, Count, F, Value
+from django.db.models import Prefetch, Min, Max, Count, F, Value, Q
+from django.http import JsonResponse
+from django.template.defaultfilters import filesizeformat
+from django.urls import reverse
+from django.utils.html import escape
 
-from api.models import Pack, Song, Chart, ChartData
+from api.models import Pack, Song, Chart, ChartData, PackSubStyle
 
 MIN_SEARCH_QUERY_LEN = 2
 SEARCH_MAX_RESULTS = 1000
@@ -29,6 +34,165 @@ PACK_LIST_STYLE_FILTERS = {
     "techno-single8": "Techno Single 8",
     "techno-single9": "Techno Single 9",
 }
+
+_VALID_SUBSTYLES = frozenset(c[0] for c in PackSubStyle.choices)
+
+
+def _pack_list_page_context():
+    """Shared template context for pack list / pack search pages."""
+    return {
+        "styles": PACK_LIST_STYLE_FILTERS,
+        "substyle_choices": PackSubStyle.choices,
+    }
+
+
+def _parse_pack_csv_filter(request, param, valid):
+    raw = (request.GET.get(param, "") or "").strip()
+    if not raw:
+        return []
+    return [p for p in (x.strip() for x in raw.split(",")) if p and p in valid]
+
+# DataTables server-side: max rows per request (avoid huge payloads)
+PACK_DATATABLES_MAX_LENGTH = 500
+
+
+def _pack_datatable_cells(pack):
+    """Inner HTML for each column (no <td>; DataTables inserts cells)."""
+    banner = pack.banner or "nobanner.png"
+    img_html = (
+        f'<img class="lazy-img img-fluid rounded" style="max-height:50px;" '
+        f'data-src="/media/images/packs/{escape(banner)}">'
+    )
+    name_display = pack.name[:64] + ("..." if len(pack.name) > 64 else "")
+    name_html = (
+        f'<a class="small text-blue text-decoration-none fw-medium" '
+        f'href="/pack/{pack.id}">{escape(name_display)}</a>'
+    )
+    size_html = (
+        f'<span data-sort="{pack.size}" class="small text-center text-gray-300 d-inline-block w-100">'
+        f"{filesizeformat(pack.size)}</span>"
+    )
+    song_count_html = f'<span class="small text-center text-gray-300 d-inline-block w-100">{pack.song_count}</span>'
+    type_imgs = []
+    for t in pack.types:
+        type_imgs.append(
+            f'<img alt="{escape(t)}" data-bs-toggle="tooltip" data-bs-placement="top" '
+            f'title="{escape(t)} charts" class="img-fluid d-inline-block" '
+            f'style="max-width: 30px; filter: invert(0);" '
+            f'src="/static/images/types/{escape(t)}.png">'
+        )
+    types_inner = "".join(type_imgs)
+    types_html = (
+        f'<span data-sort="{escape(str(pack.types))}" class="small text-center text-gray-300 d-inline-block" '
+        f'style="width:100px">{types_inner}</span>'
+    )
+    if pack.date_created:
+        date_str = pack.date_created.strftime("%Y-%m-%d")
+    else:
+        date_str = pack.date_scanned.strftime("%Y-%m-%d")
+    date_html = f'<span class="small text-center text-gray-300 d-inline-block w-100">{escape(date_str)}</span>'
+    dl_url = reverse("download_pack", args=[pack.id])
+    dl_html = (
+        f'<a class="text-center text-gray-300 d-inline-block w-100" href="{escape(dl_url)}">'
+        f'<strong class="bi bi-download"></strong></a>'
+    )
+    return [
+        img_html,
+        name_html,
+        size_html,
+        song_count_html,
+        types_html,
+        date_html,
+        dl_html,
+    ]
+
+
+@require_GET
+def pack_list_datatables(request):
+    """JSON feed for DataTables server-side processing (paginated pack list)."""
+    try:
+        draw = int(request.GET.get("draw", 0))
+    except (TypeError, ValueError):
+        draw = 0
+    try:
+        start = max(0, int(request.GET.get("start", 0)))
+    except (TypeError, ValueError):
+        start = 0
+    try:
+        length = int(request.GET.get("length", 25))
+    except (TypeError, ValueError):
+        length = 25
+    if length == -1:
+        length = 100
+    elif length <= 0:
+        length = 25
+    elif length > PACK_DATATABLES_MAX_LENGTH:
+        length = PACK_DATATABLES_MAX_LENGTH
+
+    search_value = (request.GET.get("search[value]", "") or "").strip()
+    pack_name_scope = (request.GET.get("pack_name_scope", "") or "").strip()
+    style_filters_raw = request.GET.get("style_filters", "") or ""
+    style_filters = [s.strip() for s in style_filters_raw.split(",") if s.strip()]
+
+    substyle_filters = _parse_pack_csv_filter(
+        request, "pack_substyle_filters", _VALID_SUBSTYLES
+    )
+
+    try:
+        order_col = int(request.GET.get("order[0][column]", "1"))
+    except (TypeError, ValueError):
+        order_col = 1
+    order_dir = (request.GET.get("order[0][dir]", "asc") or "asc").lower()
+    desc = order_dir == "desc"
+
+    order_map = {
+        1: "name",
+        2: "size",
+        3: "song_count",
+        4: "name",
+        5: "date_scanned",
+    }
+    if order_col not in order_map:
+        order_col = 1
+    order_field = order_map[order_col]
+    order_prefix = "-" if desc else ""
+
+    base_qs = (
+        Pack.objects.annotate(song_count=Count("songs"))
+        .exclude(types=[])
+    )
+    if pack_name_scope:
+        base_qs = base_qs.filter(name__icontains=pack_name_scope)
+
+    records_total = base_qs.count()
+
+    qs = base_qs
+    if style_filters:
+        style_q = Q()
+        for s in style_filters:
+            style_q |= Q(style__icontains=f'"{s}"')
+        qs = qs.filter(style_q)
+
+    if substyle_filters:
+        qs = qs.filter(substyle__in=substyle_filters)
+
+    if search_value:
+        qs = qs.filter(
+            Q(name__icontains=search_value) | Q(altname__icontains=search_value)
+        )
+
+    records_filtered = qs.count()
+    qs = qs.order_by(f"{order_prefix}{order_field}", f"{order_prefix}id")
+    page = qs[start : start + length]
+
+    return JsonResponse(
+        {
+            "draw": draw,
+            "recordsTotal": records_total,
+            "recordsFiltered": records_filtered,
+            "data": [_pack_datatable_cells(p) for p in page],
+        }
+    )
 
 
 def _song_search_base_queryset():
@@ -121,8 +285,8 @@ def search(request, search_type=None, search_query=None):
             ),
         }
         if "pack" in search_type:
-            ctx["packs"] = []
-            ctx["styles"] = PACK_LIST_STYLE_FILTERS
+            ctx["pack_name_scope"] = ""
+            ctx.update(_pack_list_page_context())
             return render(request, "pack_list.html", ctx)
         ctx["songs"] = []
         return render(request, "search.html", ctx)
@@ -140,25 +304,12 @@ def search(request, search_type=None, search_query=None):
         songs_qs = _song_search_base_queryset().filter(credit__icontains=q)
         songs = list(songs_qs[: SEARCH_MAX_RESULTS + 1])
     elif "pack" in search_type:
-        packs_qs = Pack.objects.filter(name__icontains=q).annotate(
-            song_count=Count("songs")
-        )
-        packs = list(packs_qs)
-        packs.sort(key=lambda pack: natural_sort_key(pack.name))
-        search_truncated = len(packs) > SEARCH_MAX_RESULTS
-        if search_truncated:
-            packs = packs[:SEARCH_MAX_RESULTS]
-        return render(
-            request,
-            "pack_list.html",
-            {
-                "packs": packs,
-                "search_query": q,
-                "search_truncated": search_truncated,
-                "search_max_results": SEARCH_MAX_RESULTS,
-                "styles": PACK_LIST_STYLE_FILTERS,
-            },
-        )
+        ctx = {
+            "search_query": q,
+            "pack_name_scope": q,
+        }
+        ctx.update(_pack_list_page_context())
+        return render(request, "pack_list.html", ctx)
 
     search_truncated = len(songs) > SEARCH_MAX_RESULTS
     if search_truncated:
@@ -333,16 +484,10 @@ def chart_list(request, songid):
     return render(request, "song.html", context)
 
 def pack_list(request):
-    """pack list"""
-    packs = list(Pack.objects.annotate(song_count=Count('songs')).order_by("name"))
-    packs.sort(key=lambda pack: natural_sort_key(pack.name))
-
-    context = {
-        "packs": packs,
-        "styles": PACK_LIST_STYLE_FILTERS,
-    }
-
-    return render(request, "pack_list.html", context)
+    """pack list (rows loaded via DataTables server-side /packs/data)."""
+    ctx = {"pack_name_scope": ""}
+    ctx.update(_pack_list_page_context())
+    return render(request, "pack_list.html", ctx)
 
 def main(request):
     """main home"""

@@ -16,6 +16,7 @@ urlpatterns = [
     path("download/pack/<int:pack_id>/", views.download_pack, name="download_pack"),
     path("download/mirror/<int:pack_id>/", views.download_mirror, name="download_mirror"),
     path("packs", views.pack_list),
+    path("packs/data", views.pack_list_datatables, name="pack_list_datatables"),
     path("", views.main),
     ]
 
