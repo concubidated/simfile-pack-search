@@ -82,6 +82,31 @@ th.sorting_disabled::after {
   display: none !important;
 }
 
+/* Pack list — Substyle toggles: override Bootstrap + base.css .btn { color: #212529 } on dark cards */
+#substyleFilterButtons button.btn.substyle-filter-btn.pack-meta-filter {
+  color: #f1f5f9 !important;
+  border: 1px solid #94a3b8 !important;
+  background-color: rgba(30, 41, 59, 0.9) !important;
+  font-weight: 500;
+  --bs-btn-color: #f1f5f9;
+  --bs-btn-bg: rgba(30, 41, 59, 0.9);
+  --bs-btn-border-color: #94a3b8;
+}
+#substyleFilterButtons button.btn.substyle-filter-btn.pack-meta-filter:hover {
+  color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  background-color: rgba(51, 65, 85, 0.95) !important;
+}
+#substyleFilterButtons button.btn.substyle-filter-btn.pack-meta-filter:focus-visible {
+  box-shadow: 0 0 0 0.2rem rgba(148, 163, 184, 0.45) !important;
+}
+#substyleFilterButtons button.btn.substyle-filter-btn.pack-meta-filter.active {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+  border-color: #f1f5f9 !important;
+  font-weight: 600;
+}
+
 .dt-footer-new {
   background-color: #1e293b;
   border-radius: 0 0 0.5rem 0.5rem;
