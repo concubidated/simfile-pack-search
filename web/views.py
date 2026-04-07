@@ -74,10 +74,14 @@ def _pack_datatable_cells(pack):
         f'href="/pack/{pack.id}">{escape(name_display)}</a>'
     )
     size_html = (
-        f'<span data-sort="{pack.size}" class="small text-center text-gray-300 d-inline-block w-100">'
+        f'<span data-sort="{pack.size}" '
+        f'class="small text-center text-gray-300 d-inline-block w-100">'
         f"{filesizeformat(pack.size)}</span>"
     )
-    song_count_html = f'<span class="small text-center text-gray-300 d-inline-block w-100">{pack.song_count}</span>'
+    song_count_html = (
+        f'<span class="small text-center text-gray-300 d-inline-block w-100">'
+        f"{pack.song_count}</span>"
+    )
     type_imgs = []
     for t in pack.types:
         type_imgs.append(
@@ -88,14 +92,18 @@ def _pack_datatable_cells(pack):
         )
     types_inner = "".join(type_imgs)
     types_html = (
-        f'<span data-sort="{escape(str(pack.types))}" class="small text-center text-gray-300 d-inline-block" '
+        f'<span data-sort="{escape(str(pack.types))}" '
+        f'class="small text-center text-gray-300 d-inline-block" '
         f'style="width:100px">{types_inner}</span>'
     )
     if pack.date_created:
         date_str = pack.date_created.strftime("%Y-%m-%d")
     else:
         date_str = pack.date_scanned.strftime("%Y-%m-%d")
-    date_html = f'<span class="small text-center text-gray-300 d-inline-block w-100">{escape(date_str)}</span>'
+    date_html = (
+        f'<span class="small text-center text-gray-300 d-inline-block w-100">'
+        f"{escape(date_str)}</span>"
+    )
     dl_url = reverse("download_pack", args=[pack.id])
     dl_html = (
         f'<a class="text-center text-gray-300 d-inline-block w-100" href="{escape(dl_url)}">'

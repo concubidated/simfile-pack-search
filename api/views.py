@@ -113,20 +113,22 @@ def chart_json_by_key(request, chart_key):
 def search(request):
     """Search for packs"""
     search_query = request.GET.get("query")
-    type = request.GET.get("type")
+    query_type = request.GET.get("type")
 
-    if type == "title":
+    if query_type == "title":
         packs = (Pack.objects.filter(songs__title__icontains=search_query)
         .distinct().order_by("name"))
-    elif type == "artist":
+    elif query_type == "artist":
         packs = (Pack.objects.filter(songs__artist__icontains=search_query)
         .distinct().order_by("name"))
-    elif type == "credit":
+    elif query_type == "credit":
         packs = (Pack.objects.filter(songs__credit__icontains=search_query)
         .distinct().order_by("name"))
-    elif type == "pack":
+    elif query_type == "pack":
         packs = (Pack.objects.filter(name__icontains=search_query)
         .order_by("name"))
+    else:
+        packs = Pack.objects.none()
 
     packs_list = []
     for pack in packs:
