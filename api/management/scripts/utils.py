@@ -95,31 +95,50 @@ def sha1sum(file):
     return sha1.hexdigest()
 
 def find_image(path):
-    """Scan a folder and returns the first found image"""
-    bn_types = {".png", ".jpeg", ".jpg", ".gif", ".bmp", ".avi", ".mp4"}
-    ignore_pattern = re.compile(r"\b(cd|cdtitle|bg|background)\b", re.IGNORECASE)
-    prefer_pattern = re.compile(r"\b(bn|banner)\b", re.IGNORECASE)
+    """Scan a folder and return a banner image.
 
-    best_match = None
+    Skips names that look like backgrounds: ``bg`` appears as a substring (e.g.
+    ``zbg``), not only as a whole word. Whole-word matches still apply for
+    ``cd``, ``cdtitle``, and ``background``.
 
-    for ext in bn_types:
-        files = [
-            os.path.join(path, f)
-            for f in os.listdir(path)
-            if f.lower().endswith(ext) and os.path.isfile(os.path.join(path, f))
-        ]
-        valid_files = [f for f in files if not ignore_pattern.search(os.path.basename(f))]
+    Prefers names containing ``bn`` as a substring (e.g. ``...abn.png``) or the
+    word ``banner``, since a whole-word ``bn`` match would miss ``abn``-style names.
+    """
+    image_exts = {".png", ".jpeg", ".jpg", ".gif", ".bmp", ".avi", ".mp4"}
+    ignore_words = re.compile(r"\b(cd|cdtitle|background)\b", re.IGNORECASE)
 
-        # Check for a preferred file
-        for file in valid_files:
-            if prefer_pattern.search(os.path.basename(file)):
-                return file
+    def ignored(name):
+        base = os.path.basename(name)
+        lower = base.lower()
+        if "bg" in lower:
+            return True
+        return bool(ignore_words.search(base))
 
-        # If no preferred image, store the first valid one
-        if valid_files and best_match is None:
-            best_match = valid_files[0]
+    def preferred(name):
+        lower = os.path.basename(name).lower()
+        if "bn" in lower:
+            return True
+        return bool(re.search(r"\bbanner\b", lower, re.IGNORECASE))
 
-    return best_match
+    candidates = []
+    for f in os.listdir(path):
+        lower_f = f.lower()
+        if not any(lower_f.endswith(ext) for ext in image_exts):
+            continue
+        full = os.path.join(path, f)
+        if not os.path.isfile(full):
+            continue
+        if ignored(full):
+            continue
+        candidates.append(full)
+
+    if not candidates:
+        return None
+
+    candidates.sort(
+        key=lambda p: (0 if preferred(p) else 1, os.path.basename(p).lower())
+    )
+    return candidates[0]
 
 def convert_video_to_gif(banner_path):
     """Convert a video to a GIF without loading everything into memory."""
