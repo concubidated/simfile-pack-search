@@ -17,7 +17,7 @@
   display: block;
 }
 
-canvas {
+canvas:not(#notefield) {
   display: block;
   width: 100% !important;
 }
@@ -299,23 +299,28 @@ th.sorting_disabled::after {
         border: 1px solid #ccc;
         overflow: hidden;
 }
-  .scrollbar-notes {
+  #notefield {
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
+        z-index: 1;
+        pointer-events: none;
+  }
+  .scrollbar-notes {
+        position: absolute;
+        top: 0;
+        right: 0;
         height: 100%;
         overflow-y: scroll;
-        z-index: 1;
+        overflow-x: hidden;
+        z-index: 2;
+  }
+  .render.has-overlay-scrollbar .scrollbar-notes {
+        left: 0;
+        right: auto;
+        width: 100%;
   }
   .fake-scroll {
         width: 1px;
         height: 500px; /* Large enough for all virtual rows */
-  }
-  .canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 2;
-        pointer-events: none; /* Let scroll events pass through */
   }

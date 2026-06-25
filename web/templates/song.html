@@ -301,6 +301,14 @@ $(`.scrollbar-notes`).on('scroll', function() {
 	drawNoteField(chartData, zoom)
 });
 
+// Scroll chart preview with mouse wheel over the canvas area
+$('#render').on('wheel', function(e) {
+	if ($(e.target).closest('#scrollbar-notes').length) return;
+	const el = document.getElementById('scrollbar-notes');
+	el.scrollTop += e.originalEvent.deltaY;
+	e.preventDefault();
+});
+
 // Set up zoom slider
 $('#zoom-slider').on('input', function() {
 	// Get the current zoom level
@@ -384,7 +392,7 @@ function updateChartVisualizer(chart) {
         }
         canvas[0].width = chartData.width;
         canvas.css('width', chartData.width + 'px');
-        $('#render').width(chartData.width+10);
+        layoutChartViewer(chartData.width);
         drawNoteField(chartData, zoom);
     }
 }

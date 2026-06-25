@@ -90,6 +90,33 @@ function checkHashOnLoad() {
     return false;
 }
 
+function getScrollbarWidth() {
+    const outer = document.createElement('div');
+    outer.style.visibility = 'hidden';
+    outer.style.overflow = 'scroll';
+    outer.style.width = '100px';
+    document.body.appendChild(outer);
+    const width = outer.offsetWidth - outer.clientWidth;
+    document.body.removeChild(outer);
+    return width;
+}
+
+function layoutChartViewer(chartWidth) {
+    const scrollbarWidth = getScrollbarWidth();
+    const $render = $('#render');
+    const $scrollbar = $('#scrollbar-notes');
+
+    if (scrollbarWidth > 0) {
+        $render.removeClass('has-overlay-scrollbar');
+        $render.width(chartWidth + scrollbarWidth);
+        $scrollbar.css({ width: scrollbarWidth, left: 'auto', right: 0 });
+    } else {
+        $render.addClass('has-overlay-scrollbar');
+        $render.width(chartWidth);
+        $scrollbar.css({ width: '100%', left: 0, right: 'auto' });
+    }
+}
+
 function drawNoteField(chart, zoom) {
     if (chart.notes[0][1][0].length < 6) {
         size = 64;
