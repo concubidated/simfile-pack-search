@@ -24,7 +24,7 @@ class Command(BaseCommand):
         parsed = []
         for song in out:
             data = lz4_decompress(song[0], song[1])
-            parsed.append(chart_parse.parse_ssc_data(data))
+            parsed.append(chart_parse.parse_ssc_data(data, song[2]))
 
         saved_songs, saved_charts = data_import.save_song_chart_data("Test Pack", parsed)
 

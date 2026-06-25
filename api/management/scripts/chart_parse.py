@@ -99,7 +99,7 @@ def parse_radar(values):
     radar_data = dict(zip(radar_keys, data[5:14]))
     return radar_data
 
-def parse_ssc_data(data):
+def parse_ssc_data(data, source_filename=None):
     """Parses decompressed SSC data into Song and Chart objects."""
     # Convert bytes to string if necessary
     if isinstance(data, bytes):
@@ -176,7 +176,7 @@ def parse_ssc_data(data):
                 try:
                     bpm_data.add(int(float(line.split("=")[1])))
                 except Exception as e:
-                    filename = song.filename if song else ""
+                    filename = source_filename or (song.filename if song else "")
                     raise RuntimeError(
                         f"Failed parsing BPM data for {filename!r}: {line!r}"
                     ) from e

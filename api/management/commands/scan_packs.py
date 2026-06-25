@@ -169,7 +169,7 @@ class Command(BaseCommand):
             songs = []
             for song in out:
                 data = utils.lz4_decompress(song[0], song[1])
-                songs.append(chart_parse.parse_ssc_data(data))
+                songs.append(chart_parse.parse_ssc_data(data, song[2]))
 
                 # lets store the song banner
                 last_song = songs[-1]
