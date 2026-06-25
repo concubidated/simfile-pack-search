@@ -173,7 +173,13 @@ def parse_ssc_data(data):
         # Continue parsing BPM data if in progress
         if parsing_bpms:
             if ";" not in line:
-                bpm_data.add(int(float(line.split("=")[1])))
+                try:
+                    bpm_data.add(int(float(line.split("=")[1])))
+                except Exception as e:
+                    filename = song.filename if song else ""
+                    raise RuntimeError(
+                        f"Failed parsing BPM data for {filename!r}: {line!r}"
+                    ) from e
                 continue
             min_bpm = min(bpm_data)
             max_bpm = max(bpm_data)
