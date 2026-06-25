@@ -104,6 +104,9 @@ def find_image(path):
     Prefers names containing ``bn`` as a substring (e.g. ``...abn.png``) or the
     word ``banner``, since a whole-word ``bn`` match would miss ``abn``-style names.
     """
+    if not path or not os.path.isdir(path):
+        return None
+
     image_exts = {".png", ".jpeg", ".jpg", ".gif", ".bmp", ".avi", ".mp4"}
     ignore_words = re.compile(r"\b(cd|cdtitle|background)\b", re.IGNORECASE)
 
