@@ -12,7 +12,18 @@ from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
-from django.db.models import Prefetch, Min, Max, Count, F, Value, Q
+from django.db.models import (
+    Prefetch,
+    Min,
+    Max,
+    Count,
+    F,
+    Value,
+    Q,
+    OuterRef,
+    Subquery,
+)
+from django.db.models.functions import Coalesce, TruncDate
 from django.http import JsonResponse
 from django.template.defaultfilters import filesizeformat
 from django.urls import reverse
@@ -169,17 +180,33 @@ def pack_list_datatables(request):
         2: "size",
         3: "song_count",
         4: "name",
-        5: "date_scanned",
+        5: "sort_date",
     }
     if order_col not in order_map:
         order_col = 1
     order_field = order_map[order_col]
     order_prefix = "-" if desc else ""
 
+    song_count_subquery = (
+        Song.objects
+        .filter(pack_id=OuterRef("pk"))
+        .values("pack_id")
+        .annotate(count=Count("id"))
+        .values("count")
+    )
+
     base_qs = (
-        Pack.objects.annotate(song_count=Count("songs"))
+        Pack.objects
+        .annotate(
+            song_count=Coalesce(
+                Subquery(song_count_subquery),
+                Value(0),
+            ),
+            sort_date=Coalesce("date_created", TruncDate("date_scanned")),
+        )
         .exclude(types=[])
     )
+
     if pack_name_scope:
         if pack_name_exact:
             base_qs = base_qs.filter(name__iexact=pack_name_scope)
