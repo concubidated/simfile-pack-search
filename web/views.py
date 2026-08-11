@@ -575,10 +575,24 @@ def pack_list(request):
 
 def main(request):
     """main home"""
+
+    song_count_subquery = (
+        Song.objects
+        .filter(pack_id=OuterRef("pk"))
+        .values("pack_id")
+        .annotate(count=Count("id"))
+        .values("count")
+    )
+
     packs = list(
         Pack.objects
-        .annotate(song_count=Count('songs'))
-        .order_by("-date_scanned")[:20]  # descending (most downloaded first)
+        .annotate(
+            song_count=Coalesce(
+                Subquery(song_count_subquery),
+                Value(0),
+            )
+        )
+        .order_by("-date_scanned")[:20]
     )
 
     context = {
