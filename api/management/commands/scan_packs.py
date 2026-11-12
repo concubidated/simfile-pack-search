@@ -122,19 +122,25 @@ class Command(BaseCommand):
             # At this point we can create the Packs object
             # packname, filesized, scanned, banner, date, scanned,
             # pack.ini will have some of that too
+            defaults = {
+                "size": size,
+                "sha1sum": pack_hash,
+                "scanned": False,
+                "extras": found_extra,
+                "banner": new_banner,
+            }
 
-            pack_date = utils.get_newest_zip_file_date(pack_path)
+            pack_date = None
+            if not rescan:
+                pack_date = utils.get_newest_zip_file_date(pack_path)
+            if pack_date is not None:
+                defaults["date_created"] = pack_date
+
             pack, _ = Pack.objects.update_or_create(
                 name=name,
-                defaults={
-                    "size": size,
-                    "date_created": pack_date,
-                    "sha1sum": pack_hash,
-                    "scanned": False,
-                    "extras": found_extra,
-                    "banner": new_banner,
-                }
+                defaults=defaults,
             )
+
             # delete song.db from cache
             Path(f"{outfox_cache_path}/song.db").unlink(missing_ok=True)
 
